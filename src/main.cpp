@@ -15,43 +15,92 @@
 
 using namespace std;
 
+GLFWwindow* window = NULL;
 GLuint program;
 GLuint vao, vbo, tbo;
 
-// Load the shader from the specified file. Returns false if the shader could not be loaded
-static GLubyte shaderText[8192];
-bool loadShaderFile(const char *filename, GLuint shader) {
-  GLint shaderLength = 0;
-  FILE *fp;
-  
-  // Open the shader file
-  fp = fopen(filename, "r");
-  if(fp != NULL) {
-    // See how long the file is
-    while (fgetc(fp) != EOF)
-      shaderLength++;
-    
-    // Go back to beginning of file
-    rewind(fp);
-    
-    // Read the whole file in
-    fread(shaderText, 1, shaderLength, fp);
-    
-    // Make sure it is null terminated and close the file
-    shaderText[shaderLength] = '\0';
-    fclose(fp);
-  }
-  else {
-    return false;
-  }
-  
-  // Load the string into the shader object
-  GLchar* fsStringPtr[1];
-  fsStringPtr[0] = (GLchar *)((const char*)shaderText);
-  glShaderSource(shader, 1, (const GLchar **)fsStringPtr, NULL);
-  
-  return true;
-} 
+/*
+*	Loads GLSL shaders
+*	Credit to NeHe OpenGL Tutorials for this code
+*/
+GLuint LoadShaders(const char * vertex_file_path,const char * fragment_file_path)
+{
+
+	// Create the shaders
+	GLuint VertexShaderID = glCreateShader(GL_VERTEX_SHADER);
+	GLuint FragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
+
+	// Read the Vertex Shader code from the file
+	std::string VertexShaderCode;
+	std::ifstream VertexShaderStream(vertex_file_path, std::ios::in);
+	if(VertexShaderStream.is_open())
+	{
+	std::string Line = "";
+	while(getline(VertexShaderStream, Line))
+	    VertexShaderCode += "\n" + Line;
+	VertexShaderStream.close();
+	}
+
+	// Read the Fragment Shader code from the file
+	std::string FragmentShaderCode;
+	std::ifstream FragmentShaderStream(fragment_file_path, std::ios::in);
+	if(FragmentShaderStream.is_open()){
+	std::string Line = "";
+	while(getline(FragmentShaderStream, Line))
+	    FragmentShaderCode += "\n" + Line;
+	FragmentShaderStream.close();
+	}
+
+	GLint Result = GL_FALSE;
+	int InfoLogLength;
+
+	// Compile Vertex Shader
+	printf("Compiling shader : %s\n", vertex_file_path);
+	char const * VertexSourcePointer = VertexShaderCode.c_str();
+	glShaderSource(VertexShaderID, 1, &VertexSourcePointer , NULL);
+	glCompileShader(VertexShaderID);
+
+	// Check Vertex Shader
+	glGetShaderiv(VertexShaderID, GL_COMPILE_STATUS, &Result);
+	glGetShaderiv(VertexShaderID, GL_INFO_LOG_LENGTH, &InfoLogLength);
+	std::vector<char> VertexShaderErrorMessage(InfoLogLength);
+	glGetShaderInfoLog(VertexShaderID, InfoLogLength, NULL, &VertexShaderErrorMessage[0]);
+	fprintf(stdout, "Vert Shader Check: %s\n", &VertexShaderErrorMessage[0]);
+
+	// Compile Fragment Shader
+	printf("Compiling shader : %s\n", fragment_file_path);
+	char const * FragmentSourcePointer = FragmentShaderCode.c_str();
+	glShaderSource(FragmentShaderID, 1, &FragmentSourcePointer , NULL);
+	glCompileShader(FragmentShaderID);
+
+	// Check Fragment Shader
+	glGetShaderiv(FragmentShaderID, GL_COMPILE_STATUS, &Result);
+	glGetShaderiv(FragmentShaderID, GL_INFO_LOG_LENGTH, &InfoLogLength);
+	std::vector<char> FragmentShaderErrorMessage(InfoLogLength);
+	glGetShaderInfoLog(FragmentShaderID, InfoLogLength, NULL, &FragmentShaderErrorMessage[0]);
+	fprintf(stdout, "Frag Shader Check: %s\n", &FragmentShaderErrorMessage[0]);
+
+	// Link the program
+	fprintf(stdout, "Linking program\n");
+	GLuint ProgramID = glCreateProgram();
+	glAttachShader(ProgramID, VertexShaderID);
+	glAttachShader(ProgramID, FragmentShaderID);
+	glLinkProgram(ProgramID);
+
+	// Check the program
+	glGetProgramiv(ProgramID, GL_LINK_STATUS, &Result);
+	glGetProgramiv(ProgramID, GL_INFO_LOG_LENGTH, &InfoLogLength);
+	std::vector<char> ProgramErrorMessage( max(InfoLogLength, int(1)) );
+	glGetProgramInfoLog(ProgramID, InfoLogLength, NULL, &ProgramErrorMessage[0]);
+	fprintf(stdout, "Linking Check: %s\n", &ProgramErrorMessage[0]);
+
+	glDeleteShader(VertexShaderID);
+	glDeleteShader(FragmentShaderID);
+
+	return ProgramID;
+}
+
+
 
 
 // Keyboard callback function.
@@ -64,7 +113,7 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 /*
 * Draw Calls
 */
-void Render(GLFWwindow* window)
+void Render()
 {
   glClearColor(0.6,0.6,0.6,0.0);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -87,7 +136,7 @@ void updateMVP()
   glm::vec3 cameraPosition = glm::vec3(4.0f,3.0f,3.0f);
   glm::vec3 cameraTarget = glm::vec3(0.0f,0.0f,0.0f);
   glm:: vec3 upVector = glm::vec3(0.0f,1.0f,0.0f);
-  glm::mat4 CameraMatrix = glm::lookAt( cameraPosition, cameraTarget, upVector);
+  glm::mat4 CameraMatrix = glm::lookAt(cameraPosition, cameraTarget, upVector);
 
   //Projection
   float fovy = M_PI * 0.25f; //Radians,this is equivalent to 45 degrees
@@ -114,7 +163,6 @@ void updateMVP()
 int main(int argc, char *argv[])
 {
   // Initialize GLFW
-  GLFWwindow* window;
   if (!glfwInit()) {
     printf("glfwInit failed\n");
     exit(EXIT_FAILURE);
@@ -143,35 +191,10 @@ int main(int argc, char *argv[])
     exit(EXIT_FAILURE);
   }
   
-  //================== Vertex Shader ===========================
-  // Compile vertex shader
-  GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-  if(!loadShaderFile("vertexShader.glsl", vertex_shader)) {
-    glDeleteShader(vertex_shader);
-    cout << "The vertex shader could not be found" << endl;
-  }
-  glCompileShader(vertex_shader);
-  
-  //================== Fragment Shader ========================
-  // Compile vertex shader
-  GLuint fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-  if(!loadShaderFile("vertexShader.glsl", fragment_shader)) {
-    glDeleteShader(fragment_shader);
-    cout << "The fragment shader could not be found" << endl;
-  }
-  glCompileShader(fragment_shader);
+  //Loading shaders, will need to modify and add Geometry Shader
+  program = LoadShaders("vertexShader.glsl", "fragmentShader.glsl");
 
- 
-  //================== Geometry Shader ========================
-  //TODO
-
-  //================= Link Shaders ============================ 
-  // Create program and specify transform feedback variables
-  program = glCreateProgram();
-  glAttachShader(program, vertex_shader);
-  glAttachShader(program, fragment_shader);
-  
-  const GLchar* feedbackVaryings[] = { "outValue" };
+  const GLchar* feedbackVaryings[] = { "outVec" };
   glTransformFeedbackVaryings(program, 1, feedbackVaryings, GL_INTERLEAVED_ATTRIBS);
   
   glLinkProgram(program);
@@ -185,34 +208,24 @@ int main(int argc, char *argv[])
   vector<glm::vec4> points;
   points.push_back(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)); //point at origin
 
-  /*
-  vector<GLfloat> points = vector<GLfloat>(4);
-  points[0] = 1.0f;
-  points[1] = 2.0f;
-  points[2] = 3.0f;
-  points[3] = 4.0f;
-  */
-
   glGenBuffers(1, &vbo);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * points.size() * sizeof(glm::vec4), NULL, GL_DYNAMIC_DRAW);
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(GLfloat) * points.size() * sizeof(glm::vec4), &points[0][0]);
 
-  GLint inputAttrib = glGetAttribLocation(program, "inValue");
-  glEnableVertexAttribArray(inputAttrib);
-  glVertexAttribPointer(inputAttrib, 4, GL_FLOAT, GL_FALSE, 0, 0);
+  GLint inputAttrib = glGetAttribLocation(program, "inVec");
+  //glEnableVertexAttribArray(inputAttrib);
+  //glVertexAttribPointer(inputAttrib, 4, GL_FLOAT, GL_FALSE, 0, 0);
 
   // Create transform feedback buffer
   glGenBuffers(1, &tbo);
   glBindBuffer(GL_ARRAY_BUFFER, tbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * points.size() * sizeof(glm::vec4), NULL, GL_DYNAMIC_READ);
 
+  //============= Testing =====================
   // We aren't interested in drawing anything at the moment...
-  //glEnable(GL_RASTERIZER_DISCARD);
-
-
-  //Build the scene here, for now
-  glEnable(GL_PROGRAM_POINT_SIZE); //Will remove after geometry shader is implemented
+  glEnable(GL_RASTERIZER_DISCARD);
+  //Build test scene here
   if(program) {
     for (int i = 0; i < 5; ++i) {
     
@@ -239,12 +252,15 @@ int main(int argc, char *argv[])
       std::swap(vbo, tbo);
     }
   }
+  glEnable(GL_RASTERIZER_DISCARD);
 
+
+  glEnable(GL_PROGRAM_POINT_SIZE); //Will remove after geometry shader is implemented
   updateMVP(); //No movement yet, just static camera	
   while(!glfwWindowShouldClose(window))
   {
     glfwPollEvents();	//For key & mouse events
-	Render(window);	//Do all the things
+	Render();	//Do all the things
 
   }
 
