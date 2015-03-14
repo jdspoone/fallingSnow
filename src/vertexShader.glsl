@@ -4,5 +4,5 @@ in float inValue;
 out float outValue;
 
 void main() {
-	outValue = inValue * 2;
+	outValue = inValue *2;
 }

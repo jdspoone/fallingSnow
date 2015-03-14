@@ -1,6 +1,7 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#define GLM_FORCE_RADIANS //In GLM taking degrees as params is deprecated
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -60,8 +61,23 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
     glfwSetWindowShouldClose(window, GL_TRUE);
 }
 
+/*
+* Draw Calls
+*/
+void Render()
+{
+ //TODO: move stuff here
 
+}
 
+/*
+* Model-View-Projection Transformation Matrix
+*/
+void updateMVP()
+{
+//TODO: implement for camera functionality
+
+}
 int main(int argc, char *argv[])
 {
   // Initialize GLFW
@@ -80,6 +96,7 @@ int main(int argc, char *argv[])
   window = glfwCreateWindow(800, 800, "Falling Snow", NULL, NULL);
   if (!window) {
     glfwTerminate();
+    printf("glfw window create failed\n");
     exit(EXIT_FAILURE);
   }
   glfwMakeContextCurrent(window);
@@ -93,17 +110,33 @@ int main(int argc, char *argv[])
     exit(EXIT_FAILURE);
   }
   
-  // Compile shader
-  GLuint shader = glCreateShader(GL_VERTEX_SHADER);
-  if(!loadShaderFile("vertexShader.glsl", shader)) {
-    glDeleteShader(shader);
+  //================== Vertex Shader ===========================
+  // Compile vertex shader
+  GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
+  if(!loadShaderFile("vertexShader.glsl", vertex_shader)) {
+    glDeleteShader(vertex_shader);
     cout << "The vertex shader could not be found" << endl;
   }
-  glCompileShader(shader);
+  glCompileShader(vertex_shader);
   
+  //================== Fragment Shader ========================
+  // Compile vertex shader
+  GLuint fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+  if(!loadShaderFile("vertexShader.glsl", fragment_shader)) {
+    glDeleteShader(fragment_shader);
+    cout << "The fragment shader could not be found" << endl;
+  }
+  glCompileShader(fragment_shader);
+
+ 
+  //================== Geometry Shader ========================
+  //TODO
+
+  //================= Link Shaders ============================ 
   // Create program and specify transform feedback variables
   program = glCreateProgram();
-  glAttachShader(program, shader);
+  glAttachShader(program, vertex_shader);
+  glAttachShader(program, fragment_shader);
   
   const GLchar* feedbackVaryings[] = { "outValue" };
   glTransformFeedbackVaryings(program, 1, feedbackVaryings, GL_INTERLEAVED_ATTRIBS);
@@ -132,7 +165,9 @@ int main(int argc, char *argv[])
   glBufferData(GL_ARRAY_BUFFER, sizeof(data), nullptr, GL_DYNAMIC_READ);
 
   // We aren't interested in drawing anything at the moment...
-  glEnable(GL_RASTERIZER_DISCARD);
+  //glEnable(GL_RASTERIZER_DISCARD);
+
+
 
   if(program) {
     for (int i = 0; i < 5; ++i) {
@@ -161,6 +196,16 @@ int main(int argc, char *argv[])
     }
   }
 	
+  while(!glfwWindowShouldClose(window))
+  {
+    glfwPollEvents();	//For key & mouse events
+	//updateMVP();
+	//Render();	//Do all the things
+
+  }
+
+  //Cleanup 
+  glDeleteProgram(program);
   glfwDestroyWindow(window);
   glfwTerminate();
   exit(EXIT_SUCCESS);
