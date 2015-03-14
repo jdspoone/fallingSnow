@@ -12,11 +12,15 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <unistd.h>
+
 
 using namespace std;
 
 GLFWwindow* window = NULL;
+vector<glm::vec3> points;
 GLuint program;
+GLuint vertexLocation;
 GLuint vao, vbo, tbo;
 
 /*
@@ -119,7 +123,8 @@ void Render()
   glUseProgram(program);
 
   glBindVertexArray(vao);
-  glEnableVertexAttribArray(0);
+  glEnableVertexAttribArray(vertexLocation);
+  glVertexAttribPointer(vertexLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
   glDrawArrays(GL_POINTS, 0, 1);
@@ -131,10 +136,75 @@ void Render()
   glfwSwapBuffers(window);
 }
 
+void LoadPoints()
+{
+
+  //Create Points
+  points.push_back(glm::vec3(0.0f, 0.0f, 0.0f)); //point at origin
+
+  //Pass to Shaders
+  glUseProgram(program); //Bind
+
+  glBindVertexArray(vao);
+  glBindBuffer(GL_ARRAY_BUFFER, vbo);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * points.size() * sizeof(glm::vec3), NULL, GL_DYNAMIC_DRAW);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(GLfloat) * points.size() * sizeof(glm::vec3), &points[0][0]);
+
+
+  glUseProgram(0); //unbind
+ 
+}
+
+void Feedback()
+{
+  const GLchar* feedbackVaryings[] = { "outVec" };
+  glTransformFeedbackVaryings(program, 1, feedbackVaryings, GL_INTERLEAVED_ATTRIBS);
+
+  glEnable(GL_RASTERIZER_DISCARD);
+  glUseProgram(program); //Bind
+  
+  glBindVertexArray(vao);
+  glEnableVertexAttribArray(vertexLocation);
+  glVertexAttribPointer(vertexLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
+  glBindBuffer(GL_ARRAY_BUFFER, vbo);
+  glBindBuffer(GL_ARRAY_BUFFER, tbo);
+
+  if(program) {
+    for (int i = 0; i < 1; ++i) {
+    
+      // Bind our input buffer
+      glEnableVertexAttribArray(vertexLocation);
+      glVertexAttribPointer(vertexLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+      // Re-bind our output buffer
+      glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, tbo);
+      glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * points.size() * sizeof(glm::vec4), NULL, GL_DYNAMIC_READ);
+
+      // Perform the feedback transform
+      glBeginTransformFeedback(GL_POINTS);
+      glDrawArrays(GL_POINTS, 0, (int)points.size());
+      glEndTransformFeedback();
+      glFlush();
+
+      // Fetch and print results
+      GLfloat buf[3];
+      glGetBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, sizeof(buf), buf);
+      printf("%f %f %f\n", buf[0], buf[1], buf[2]);
+			
+      // Swap the 2 buffers
+      std::swap(vbo, tbo);
+    }
+  }
+ 
+  glDisable(GL_RASTERIZER_DISCARD);
+  printf("\n");
+  glUseProgram(0); //Unbind
+}
+
 /*
 * Model-View-Projection Transformation Matrix
 */
-void updateMVP()
+void LoadMVP()
 {
   //Camera
   glm::vec3 cameraPosition = glm::vec3(4.0f,3.0f,3.0f);
@@ -200,68 +270,36 @@ int main(int argc, char *argv[])
 
   const GLchar* feedbackVaryings[] = { "outVec" };
   glTransformFeedbackVaryings(program, 1, feedbackVaryings, GL_INTERLEAVED_ATTRIBS);
-  
+
   glLinkProgram(program);
   glUseProgram(program);
+
+  //Where to pass in vertices to the shaders
+  vertexLocation = glGetAttribLocation(program, "inVec");
 
   // Create VAO
   glGenVertexArrays(1, &vao);
   glBindVertexArray(vao);
 
-  // Create input VBO and vertex format
-  vector<glm::vec3> points;
-  points.push_back(glm::vec3(0.0f, 0.0f, 0.0f)); //point at origin
-
+  // Create VBO
   glGenBuffers(1, &vbo);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * points.size() * sizeof(glm::vec3), NULL, GL_DYNAMIC_DRAW);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(GLfloat) * points.size() * sizeof(glm::vec3), &points[0][0]);
 
-  GLint inputAttrib = glGetAttribLocation(program, "inVec");
-  //glEnableVertexAttribArray(inputAttrib);
-  //glVertexAttribPointer(inputAttrib, 4, GL_FLOAT, GL_FALSE, 0, 0);
-
-  // Create transform feedback buffer
+  // Create TBO
   glGenBuffers(1, &tbo);
   glBindBuffer(GL_ARRAY_BUFFER, tbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * points.size() * sizeof(glm::vec4), NULL, GL_DYNAMIC_READ);
 
-  if(program) {
-    for (int i = 0; i < 5; ++i) {
-    
-      // Re-bind our input buffer
-      glBindBuffer(GL_ARRAY_BUFFER, vbo);
-      glEnableVertexAttribArray(inputAttrib);
-      glVertexAttribPointer(inputAttrib, 3, GL_FLOAT, GL_FALSE, 0, 0);
-
-      // Re-bind our output buffer
-      glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, tbo);
-
-      // Perform the feedback transform
-      glBeginTransformFeedback(GL_POINTS);
-      glDrawArrays(GL_POINTS, 0, (int)points.size());
-      glEndTransformFeedback();
-      glFlush();
-
-      // Fetch and print results
-      GLfloat buf[3];
-      glGetBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, sizeof(buf), buf);
-      printf("%f %f %f\n", buf[0], buf[1], buf[2]);
-			
-      // Swap the 2 buffers
-      std::swap(vbo, tbo);
-    }
-  }
-
+  glUseProgram(0); //unbind
 
   glEnable(GL_PROGRAM_POINT_SIZE); //Will remove after geometry shader is implemented, maybe
-  updateMVP(); //No movement yet, just static camera	
+  LoadMVP(); //No movement yet, just static camera	
+  LoadPoints();
   while(!glfwWindowShouldClose(window))
   {
     glfwPollEvents();	//For key & mouse events
     Render();	//Do all the things
-
-  }
+    Feedback();
+	}
 
   //Cleanup 
   glDeleteProgram(program);
