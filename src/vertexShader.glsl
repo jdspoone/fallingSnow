@@ -6,6 +6,6 @@ out vec3 outVec;
 
 void main() {
     gl_Position = MVP * vec4(inVec, 1.0);
-    gl_PointSize = 5.0f; //will remove after geometry shader is implemented
-	outVec = inVec + 0.5;
+    gl_PointSize = 10.0f; //will remove after geometry shader is implemented
+	outVec = vec3(inVec.x, inVec.y - 0.1, inVec.z);
 }

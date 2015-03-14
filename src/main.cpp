@@ -117,12 +117,18 @@ void Render()
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   glUseProgram(program);
-  
-  glfwSwapBuffers(window);
 
- 
+  glBindVertexArray(vao);
+  glEnableVertexAttribArray(0);
+  glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+  glDrawArrays(GL_POINTS, 0, 1);
+  
+
+  glBindVertexArray(0); 
   glUseProgram(0);
 
+  glfwSwapBuffers(window);
 }
 
 /*
@@ -220,7 +226,6 @@ int main(int argc, char *argv[])
   glBindBuffer(GL_ARRAY_BUFFER, tbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * points.size() * sizeof(glm::vec4), NULL, GL_DYNAMIC_READ);
 
-  glEnable(GL_PROGRAM_POINT_SIZE); //Will remove after geometry shader is implemented
   if(program) {
     for (int i = 0; i < 5; ++i) {
     
@@ -249,11 +254,12 @@ int main(int argc, char *argv[])
   }
 
 
+  glEnable(GL_PROGRAM_POINT_SIZE); //Will remove after geometry shader is implemented, maybe
   updateMVP(); //No movement yet, just static camera	
   while(!glfwWindowShouldClose(window))
   {
     glfwPollEvents();	//For key & mouse events
-	Render();	//Do all the things
+    Render();	//Do all the things
 
   }
 
