@@ -157,9 +157,6 @@ void LoadPoints()
 
 void Feedback()
 {
-  const GLchar* feedbackVaryings[] = { "outVec" };
-  glTransformFeedbackVaryings(program, 1, feedbackVaryings, GL_INTERLEAVED_ATTRIBS);
-
   glEnable(GL_RASTERIZER_DISCARD);
   glUseProgram(program); //Bind
   
@@ -198,6 +195,7 @@ void Feedback()
  
   glDisable(GL_RASTERIZER_DISCARD);
   printf("\n");
+
   glUseProgram(0); //Unbind
 }
 
@@ -279,15 +277,12 @@ int main(int argc, char *argv[])
 
   // Create VAO
   glGenVertexArrays(1, &vao);
-  glBindVertexArray(vao);
 
   // Create VBO
   glGenBuffers(1, &vbo);
-  glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
   // Create TBO
   glGenBuffers(1, &tbo);
-  glBindBuffer(GL_ARRAY_BUFFER, tbo);
 
   glUseProgram(0); //unbind
 
@@ -302,6 +297,9 @@ int main(int argc, char *argv[])
 	}
 
   //Cleanup 
+  glDeleteBuffers(1, &vbo);
+  glDeleteBuffers(1, &tbo);
+  glDeleteVertexArrays(1, &vao);
   glDeleteProgram(program);
   glfwDestroyWindow(window);
   glfwTerminate();
