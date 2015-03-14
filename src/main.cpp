@@ -185,14 +185,6 @@ int main(int argc, char *argv[])
   vector<glm::vec4> points;
   points.push_back(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)); //point at origin
 
-  /*
-  vector<GLfloat> points = vector<GLfloat>(4);
-  points[0] = 1.0f;
-  points[1] = 2.0f;
-  points[2] = 3.0f;
-  points[3] = 4.0f;
-  */
-
   glGenBuffers(1, &vbo);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * points.size() * sizeof(glm::vec4), NULL, GL_DYNAMIC_DRAW);
@@ -206,10 +198,6 @@ int main(int argc, char *argv[])
   glGenBuffers(1, &tbo);
   glBindBuffer(GL_ARRAY_BUFFER, tbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * points.size() * sizeof(glm::vec4), NULL, GL_DYNAMIC_READ);
-
-  // We aren't interested in drawing anything at the moment...
-  //glEnable(GL_RASTERIZER_DISCARD);
-
 
   //Build the scene here, for now
   glEnable(GL_PROGRAM_POINT_SIZE); //Will remove after geometry shader is implemented
