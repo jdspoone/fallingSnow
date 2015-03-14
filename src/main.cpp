@@ -64,9 +64,17 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 /*
 * Draw Calls
 */
-void Render()
+void Render(GLFWwindow* window)
 {
- //TODO: move stuff here
+  glClearColor(0.6,0.6,0.6,0.0);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  glUseProgram(program);
+  
+  glfwSwapBuffers(window);
+
+ 
+  glUseProgram(0);
 
 }
 
@@ -75,9 +83,34 @@ void Render()
 */
 void updateMVP()
 {
-//TODO: implement for camera functionality
+  //Camera
+  glm::vec3 cameraPosition = glm::vec3(4.0f,3.0f,3.0f);
+  glm::vec3 cameraTarget = glm::vec3(0.0f,0.0f,0.0f);
+  glm:: vec3 upVector = glm::vec3(0.0f,1.0f,0.0f);
+  glm::mat4 CameraMatrix = glm::lookAt( cameraPosition, cameraTarget, upVector);
 
+  //Projection
+  float fovy = M_PI * 0.25f; //Radians,this is equivalent to 45 degrees
+  float aspect = 1.0f;
+  float zNear = 0.1f;
+  float zFar = 100.0f;
+  glm::mat4 ProjectionMatrix = glm::perspective(fovy, aspect, zNear, zFar);
+
+  //Model
+  //nothing to do here yet
+  glm::mat4 ModelMatrix = glm::mat4(1.0f);  //Identity Matrix
+
+  //MVP
+  glm::mat4 MVP = ProjectionMatrix * CameraMatrix * ModelMatrix;
+
+  //Pass through to shaders
+  glUseProgram(program); //bind
+  GLuint MatrixID = glGetUniformLocation(program, "MVP"); 
+  glUniformMatrix4fv(MatrixID,  1, GL_FALSE, &MVP[0][0]);
+  glUseProgram(0); //unbind
+   
 }
+
 int main(int argc, char *argv[])
 {
   // Initialize GLFW
@@ -149,16 +182,21 @@ int main(int argc, char *argv[])
   glBindVertexArray(vao);
 
   // Create input VBO and vertex format
+  vector<glm::vec4> points;
+  points.push_back(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)); //point at origin
+
+  /*
   vector<GLfloat> points = vector<GLfloat>(4);
   points[0] = 1.0f;
   points[1] = 2.0f;
   points[2] = 3.0f;
   points[3] = 4.0f;
+  */
 
   glGenBuffers(1, &vbo);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * points.size(), NULL, GL_DYNAMIC_DRAW);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(GLfloat) * points.size(), points.data());
+  glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * points.size() * sizeof(glm::vec4), NULL, GL_DYNAMIC_DRAW);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(GLfloat) * points.size() * sizeof(glm::vec4), &points[0][0]);
 
   GLint inputAttrib = glGetAttribLocation(program, "inValue");
   glEnableVertexAttribArray(inputAttrib);
@@ -167,13 +205,14 @@ int main(int argc, char *argv[])
   // Create transform feedback buffer
   glGenBuffers(1, &tbo);
   glBindBuffer(GL_ARRAY_BUFFER, tbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * points.size(), NULL, GL_DYNAMIC_READ);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * points.size() * sizeof(glm::vec4), NULL, GL_DYNAMIC_READ);
 
   // We aren't interested in drawing anything at the moment...
   //glEnable(GL_RASTERIZER_DISCARD);
 
 
-
+  //Build the scene here, for now
+  glEnable(GL_PROGRAM_POINT_SIZE); //Will remove after geometry shader is implemented
   if(program) {
     for (int i = 0; i < 5; ++i) {
     
@@ -200,12 +239,12 @@ int main(int argc, char *argv[])
       std::swap(vbo, tbo);
     }
   }
-	
+
+  updateMVP(); //No movement yet, just static camera	
   while(!glfwWindowShouldClose(window))
   {
     glfwPollEvents();	//For key & mouse events
-	//updateMVP();
-	//Render();	//Do all the things
+	Render(window);	//Do all the things
 
   }
 
