@@ -1,11 +1,4 @@
-The Particle Model:
-   1. Render a scene of stationary 'snowflakes' (probably just triangles), and sort them on the GPU by distance from the camera (perhaps making a triangle's colour a function of it's distance from the camera)
-   2. Extend to allow downward motion of particles, as well as the continual creation of new particles from the top of the particle domain
-   3. Extend with primitive wind model
-
-The Individual Snowflakes:
-   1. Render a simple, fractal based snowflake with gaussian translucency
-   2. Render this snowflakes in place of every particle in the particle model
-
-The Aggregate Snow:
-   1. Modify fragment shader to apply 'fog' based on the distance of the point from the camera.     
+Based on what we planned to have done by the end of the weekend, we still need to do the following:
+    -Implement a perspective camera and actually render the points we’re passing to OpenGl
+    -Implement a geometry shader which turns a single point into 2 triangles composing a square
+    -Implement basic particle emission, probably just returning a particle to the top of the domain when it hits the bottom 

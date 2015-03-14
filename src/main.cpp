@@ -11,7 +11,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-
+#include <vector>
 
 using namespace std;
 
@@ -149,20 +149,25 @@ int main(int argc, char *argv[])
   glBindVertexArray(vao);
 
   // Create input VBO and vertex format
-  GLfloat data[] = { 1.0f, 2.0f, 3.0f, 4.0f, 5.0f };
+  vector<GLfloat> points = vector<GLfloat>(4);
+  points[0] = 1.0f;
+  points[1] = 2.0f;
+  points[2] = 3.0f;
+  points[3] = 4.0f;
 
   glGenBuffers(1, &vbo);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(data), data, GL_DYNAMIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * points.size(), NULL, GL_DYNAMIC_DRAW);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(GLfloat) * points.size(), points.data());
 
   GLint inputAttrib = glGetAttribLocation(program, "inValue");
   glEnableVertexAttribArray(inputAttrib);
-  glVertexAttribPointer(inputAttrib, 1, GL_FLOAT, GL_FALSE, 0, 0);
+  glVertexAttribPointer(inputAttrib, 4, GL_FLOAT, GL_FALSE, 0, 0);
 
   // Create transform feedback buffer
   glGenBuffers(1, &tbo);
   glBindBuffer(GL_ARRAY_BUFFER, tbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(data), nullptr, GL_DYNAMIC_READ);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * points.size(), NULL, GL_DYNAMIC_READ);
 
   // We aren't interested in drawing anything at the moment...
   //glEnable(GL_RASTERIZER_DISCARD);
@@ -175,21 +180,21 @@ int main(int argc, char *argv[])
       // Re-bind our input buffer
       glBindBuffer(GL_ARRAY_BUFFER, vbo);
       glEnableVertexAttribArray(inputAttrib);
-      glVertexAttribPointer(inputAttrib, 1, GL_FLOAT, GL_FALSE, 0, 0);
+      glVertexAttribPointer(inputAttrib, 4, GL_FLOAT, GL_FALSE, 0, 0);
 
       // Re-bind our output buffer
       glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, tbo);
 
       // Perform the feedback transform
       glBeginTransformFeedback(GL_POINTS);
-      glDrawArrays(GL_POINTS, 0, 5);
+      glDrawArrays(GL_POINTS, 0, (int)points.size());
       glEndTransformFeedback();
       glFlush();
 
       // Fetch and print results
-      GLfloat buf[5];
+      GLfloat buf[4];
       glGetBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, sizeof(buf), buf);
-      printf("%f %f %f %f %f\n", buf[0], buf[1], buf[2], buf[3], buf[4]);
+      printf("%f %f %f %f\n", buf[0], buf[1], buf[2], buf[3]);
 			
       // Swap the 2 buffers
       std::swap(vbo, tbo);
