@@ -116,12 +116,11 @@ int main(int argc, char *argv[])
   glBindVertexArray(vao);
 
   // Create input VBO and vertex format
-  vector<GLfloat> points = vector<GLfloat>(5);
+  vector<GLfloat> points = vector<GLfloat>(4);
   points[0] = 1.0f;
   points[1] = 2.0f;
   points[2] = 3.0f;
   points[3] = 4.0f;
-  points[4] = 5.0f;
 
   glGenBuffers(1, &vbo);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
@@ -130,7 +129,7 @@ int main(int argc, char *argv[])
 
   GLint inputAttrib = glGetAttribLocation(program, "inValue");
   glEnableVertexAttribArray(inputAttrib);
-  glVertexAttribPointer(inputAttrib, 1, GL_FLOAT, GL_FALSE, 0, 0);
+  glVertexAttribPointer(inputAttrib, 4, GL_FLOAT, GL_FALSE, 0, 0);
 
   // Create transform feedback buffer
   glGenBuffers(1, &tbo);
@@ -146,7 +145,7 @@ int main(int argc, char *argv[])
       // Re-bind our input buffer
       glBindBuffer(GL_ARRAY_BUFFER, vbo);
       glEnableVertexAttribArray(inputAttrib);
-      glVertexAttribPointer(inputAttrib, 1, GL_FLOAT, GL_FALSE, 0, 0);
+      glVertexAttribPointer(inputAttrib, 4, GL_FLOAT, GL_FALSE, 0, 0);
 
       // Re-bind our output buffer
       glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, tbo);
@@ -158,9 +157,9 @@ int main(int argc, char *argv[])
       glFlush();
 
       // Fetch and print results
-      GLfloat buf[5];
+      GLfloat buf[4];
       glGetBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, sizeof(buf), buf);
-      printf("%f %f %f %f %f\n", buf[0], buf[1], buf[2], buf[3], buf[4]);
+      printf("%f %f %f %f\n", buf[0], buf[1], buf[2], buf[3]);
 			
       // Swap the 2 buffers
       std::swap(vbo, tbo);
