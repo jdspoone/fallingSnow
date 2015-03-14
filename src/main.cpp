@@ -10,7 +10,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-
+#include <vector>
 
 using namespace std;
 
@@ -116,11 +116,17 @@ int main(int argc, char *argv[])
   glBindVertexArray(vao);
 
   // Create input VBO and vertex format
-  GLfloat data[] = { 1.0f, 2.0f, 3.0f, 4.0f, 5.0f };
+  vector<GLfloat> points = vector<GLfloat>(5);
+  points[0] = 1.0f;
+  points[1] = 2.0f;
+  points[2] = 3.0f;
+  points[3] = 4.0f;
+  points[4] = 5.0f;
 
   glGenBuffers(1, &vbo);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(data), data, GL_DYNAMIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * points.size(), NULL, GL_DYNAMIC_DRAW);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(GLfloat) * points.size(), points.data());
 
   GLint inputAttrib = glGetAttribLocation(program, "inValue");
   glEnableVertexAttribArray(inputAttrib);
@@ -129,7 +135,7 @@ int main(int argc, char *argv[])
   // Create transform feedback buffer
   glGenBuffers(1, &tbo);
   glBindBuffer(GL_ARRAY_BUFFER, tbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(data), nullptr, GL_DYNAMIC_READ);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * points.size(), NULL, GL_DYNAMIC_READ);
 
   // We aren't interested in drawing anything at the moment...
   glEnable(GL_RASTERIZER_DISCARD);
@@ -147,7 +153,7 @@ int main(int argc, char *argv[])
 
       // Perform the feedback transform
       glBeginTransformFeedback(GL_POINTS);
-      glDrawArrays(GL_POINTS, 0, 5);
+      glDrawArrays(GL_POINTS, 0, (int)points.size());
       glEndTransformFeedback();
       glFlush();
 
