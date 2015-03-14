@@ -1,6 +1,6 @@
 #version 410 core
 
-in vec4 outVec;
+in vec3 outVec;
 out vec4 finalColor;
 
 void main()

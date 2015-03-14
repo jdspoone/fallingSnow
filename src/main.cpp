@@ -203,13 +203,13 @@ int main(int argc, char *argv[])
   glBindVertexArray(vao);
 
   // Create input VBO and vertex format
-  vector<glm::vec4> points;
-  points.push_back(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)); //point at origin
+  vector<glm::vec3> points;
+  points.push_back(glm::vec3(0.0f, 0.0f, 0.0f)); //point at origin
 
   glGenBuffers(1, &vbo);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * points.size() * sizeof(glm::vec4), NULL, GL_DYNAMIC_DRAW);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(GLfloat) * points.size() * sizeof(glm::vec4), &points[0][0]);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * points.size() * sizeof(glm::vec3), NULL, GL_DYNAMIC_DRAW);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(GLfloat) * points.size() * sizeof(glm::vec3), &points[0][0]);
 
   GLint inputAttrib = glGetAttribLocation(program, "inVec");
   //glEnableVertexAttribArray(inputAttrib);
@@ -220,13 +220,14 @@ int main(int argc, char *argv[])
   glBindBuffer(GL_ARRAY_BUFFER, tbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * points.size() * sizeof(glm::vec4), NULL, GL_DYNAMIC_READ);
 
+  glEnable(GL_PROGRAM_POINT_SIZE); //Will remove after geometry shader is implemented
   if(program) {
     for (int i = 0; i < 5; ++i) {
     
       // Re-bind our input buffer
       glBindBuffer(GL_ARRAY_BUFFER, vbo);
       glEnableVertexAttribArray(inputAttrib);
-      glVertexAttribPointer(inputAttrib, 4, GL_FLOAT, GL_FALSE, 0, 0);
+      glVertexAttribPointer(inputAttrib, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
       // Re-bind our output buffer
       glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, tbo);
@@ -238,18 +239,16 @@ int main(int argc, char *argv[])
       glFlush();
 
       // Fetch and print results
-      GLfloat buf[4];
+      GLfloat buf[3];
       glGetBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, sizeof(buf), buf);
-      printf("%f %f %f %f\n", buf[0], buf[1], buf[2], buf[3]);
+      printf("%f %f %f\n", buf[0], buf[1], buf[2]);
 			
       // Swap the 2 buffers
       std::swap(vbo, tbo);
     }
   }
-  glEnable(GL_RASTERIZER_DISCARD);
 
 
-  glEnable(GL_PROGRAM_POINT_SIZE); //Will remove after geometry shader is implemented
   updateMVP(); //No movement yet, just static camera	
   while(!glfwWindowShouldClose(window))
   {
