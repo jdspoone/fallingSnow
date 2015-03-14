@@ -101,8 +101,6 @@ GLuint LoadShaders(const char * vertex_file_path,const char * fragment_file_path
 }
 
 
-
-
 // Keyboard callback function.
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
@@ -222,10 +220,6 @@ int main(int argc, char *argv[])
   glBindBuffer(GL_ARRAY_BUFFER, tbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * points.size() * sizeof(glm::vec4), NULL, GL_DYNAMIC_READ);
 
-  //============= Testing =====================
-  // We aren't interested in drawing anything at the moment...
-  glEnable(GL_RASTERIZER_DISCARD);
-  //Build test scene here
   if(program) {
     for (int i = 0; i < 5; ++i) {
     
