@@ -14,7 +14,6 @@
 #include <vector>
 #include <unistd.h>
 
-
 using namespace std;
 
 GLFWwindow* window = NULL;
@@ -29,7 +28,6 @@ GLuint vao, vbo, tbo;
 */
 GLuint LoadShaders(const char * vertex_file_path,const char * fragment_file_path)
 {
-
 	// Create the shaders
 	GLuint VertexShaderID = glCreateShader(GL_VERTEX_SHADER);
 	GLuint FragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
@@ -104,7 +102,6 @@ GLuint LoadShaders(const char * vertex_file_path,const char * fragment_file_path
 	return ProgramID;
 }
 
-
 // Keyboard callback function.
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
@@ -129,6 +126,7 @@ void Render()
 
   glDrawArrays(GL_POINTS, 0, (int)points.size());
 
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0); 
   glUseProgram(0);
   
@@ -137,24 +135,18 @@ void Render()
 
 void LoadPoints()
 {
-
   //Create Points
-  //points.push_back(glm::vec3(0.0f, 0.0f, 0.0f)); //point at origin
- 
   for (float i = -1; i <= 1; i+= 0.1)
     for (float j = -1; j <= 1; j+= 0.1)
        points.push_back(glm::vec3(i,1,j));
 
-  //Pass to Shaders
-  glUseProgram(program); //Bind
-
+  //Attach to buffer and vao
   glBindVertexArray(vao);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * points.size() * sizeof(glm::vec3), NULL, GL_DYNAMIC_DRAW);
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(GLfloat) * points.size() * sizeof(glm::vec3), &points[0][0]);
 
-  glUseProgram(0); //unbind
- 
+  glBindVertexArray(0); 
 }
 
 void Feedback()
@@ -163,37 +155,28 @@ void Feedback()
   glUseProgram(program); //Bind
   glBindVertexArray(vao);
   glBindBuffer(GL_ARRAY_BUFFER, tbo);
-  
 
-  if(program) {
-	//How many times to compute vertices transforms on the GPU between frames
-    for (int i = 0; i < 1; ++i) {
-
-      // Re-bind our output buffer
-      glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, tbo);
-      glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * points.size() * sizeof(glm::vec3), NULL, GL_DYNAMIC_READ);
+  // Re-bind our output buffer
+  glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, tbo);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * points.size() * sizeof(glm::vec3), NULL, GL_DYNAMIC_READ);
       
-	  // Perform the feedback transform
-      glBeginTransformFeedback(GL_POINTS);
-      glDrawArrays(GL_POINTS, 0, (int)points.size());
-      glEndTransformFeedback();
-      glFlush();
+  // Perform the feedback transform
+  glBeginTransformFeedback(GL_POINTS);
+  glDrawArrays(GL_POINTS, 0, (int)points.size());
+  glEndTransformFeedback();
+  glFlush();
 
-      // Fetch and print results
-      GLfloat buf[sizeof(GLfloat) * points.size() * sizeof(glm::vec3)];
-      glGetBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, sizeof(buf), buf);
+  // Fetch and print results
+  GLfloat buf[sizeof(GLfloat) * points.size() * sizeof(glm::vec3)];
+  glGetBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, sizeof(buf), buf);
 
-	  //for (int j = 0; j<points.size(); j+=3)
-         //printf("%f %f %f\n", buf[j], buf[j+1], buf[j+2]);
+  //for (int j = 0; j<points.size(); j+=3)
+       //printf("%f %f %f\n", buf[j], buf[j+1], buf[j+2]);
 			
-      // Swap the 2 buffers
-      std::swap(vbo, tbo);
+  // Swap the 2 buffers
+  std::swap(vbo, tbo);
 	  
-    }
-  }
- 
   glDisable(GL_RASTERIZER_DISCARD);
-  //printf("\n");
   
   glBindVertexArray(0);
   glUseProgram(0); //Unbind
