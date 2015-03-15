@@ -44,7 +44,7 @@ GLuint loadShader(GLenum type, const GLchar *path)
   default:
     typeName = "unknown";
     break;
-}
+  }
 
   // Create the shader
   GLuint shader = glCreateShader(type);
@@ -66,7 +66,7 @@ GLuint loadShader(GLenum type, const GLchar *path)
 	int InfoLogLength;
   
 	// Compile the shader
-	printf("Compiling %s shader : %s\n", typeName, path);
+	printf("Compiling %s shader: %s\n", typeName, path);
 	char const * shaderSourcePointer = shaderCode.c_str();
 	glShaderSource(shader, 1, &shaderSourcePointer , NULL);
 	glCompileShader(shader);
@@ -76,7 +76,7 @@ GLuint loadShader(GLenum type, const GLchar *path)
 	glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &InfoLogLength);
 	std::vector<char> shaderErrorMessage(InfoLogLength);
 	glGetShaderInfoLog(shader, InfoLogLength, NULL, &shaderErrorMessage[0]);
-	fprintf(stdout, "%s shader check: %s\n", typeName, &shaderErrorMessage[0]);
+	fprintf(stdout, "Checking %s shader: %s\n", typeName, &shaderErrorMessage[0]);
   
   return shader;
 }
