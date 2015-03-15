@@ -186,14 +186,6 @@ void Feedback()
   glDrawArrays(GL_POINTS, 0, (int)points.size());
   glEndTransformFeedback();
   glFlush();
-
-  // Fetch and print results
-  GLfloat* buf = new GLfloat[points.size() * sizeof(glm::vec4)];
-
-  glGetBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, sizeof(buf), buf);
-
-  //for (int j = 0; j<points.size(); j+=3)
-  // printf("%f %f %f\n", buf[j], buf[j+1], buf[j+2]);
 			
   // Swap the 2 buffers
   std::swap(vbo, tbo);
