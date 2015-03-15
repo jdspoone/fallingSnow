@@ -21,7 +21,7 @@
 using namespace std;
 
 GLFWwindow* window = NULL;
-vector<glm::vec3> points;
+vector<glm::vec4> points;
 GLuint program;
 GLuint vertexLocation;
 GLuint vao, vbo, tbo;
@@ -133,7 +133,7 @@ void Render()
 
   glBindVertexArray(vao);
   glEnableVertexAttribArray(vertexLocation);
-  glVertexAttribPointer(vertexLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
+  glVertexAttribPointer(vertexLocation, 4, GL_FLOAT, GL_FALSE, 0, 0);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
   glDrawArrays(GL_POINTS, 0, (int)points.size());
@@ -148,15 +148,24 @@ void Render()
 void LoadPoints()
 {
   //Create Points
+  float x,y,z,velocity = 1.0f;
+  /* initialize random seed: */
+  srand (time(NULL));
+ for (float k = -1; k <= 1; k+= 0.1f)
   for (float i = -1; i <= 1; i+= 0.1f)
     for (float j = -1; j <= 1; j+= 0.1f)
-       points.push_back(glm::vec3(i,1,j));
-
+    {
+        x = ((rand() % 10 + 9)/100.0f) + k; 
+        y = ((rand() % 10 + 9)/100.0f) + i; 
+        z = ((rand() % 10 + 6)/100.0f) + j;
+        velocity = ((rand() % 10 + 9)/1000.0f); 
+        points.push_back(glm::vec4(x,y,z,velocity));
+    }
   //Attach to buffer and vao
   glBindVertexArray(vao);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glBufferData(GL_ARRAY_BUFFER, points.size() * sizeof(glm::vec3), NULL, GL_DYNAMIC_DRAW);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, points.size() * sizeof(glm::vec3), &points[0][0]);
+  glBufferData(GL_ARRAY_BUFFER, points.size() * sizeof(glm::vec4), NULL, GL_DYNAMIC_DRAW);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, points.size() * sizeof(glm::vec4), &points[0][0]);
 
   glBindVertexArray(0); 
 }
@@ -170,7 +179,7 @@ void Feedback()
 
   // Re-bind our output buffer
   glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, tbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * points.size() * sizeof(glm::vec3), NULL, GL_DYNAMIC_READ);
+  glBufferData(GL_ARRAY_BUFFER, points.size() * sizeof(glm::vec4), NULL, GL_DYNAMIC_READ);
       
   // Perform the feedback transform
   glBeginTransformFeedback(GL_POINTS);
@@ -179,7 +188,7 @@ void Feedback()
   glFlush();
 
   // Fetch and print results
-  GLfloat* buf = new GLfloat[sizeof(GLfloat) * points.size() * sizeof(glm::vec3)];
+  GLfloat* buf = new GLfloat[points.size() * sizeof(glm::vec4)];
 
   glGetBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, sizeof(buf), buf);
 
@@ -274,7 +283,7 @@ int main(int argc, char *argv[])
   glGenVertexArrays(1, &vao);
 
   // Create VBO
-  glGenBuffers(1, &vbo); //Attatched to VAO in LoadPoints()
+  glGenBuffers(1, &vbo); //Attatched to VAO in LoadPoints(), and Render()
 
   // Create TBO
   glGenBuffers(1, &tbo); //Attatched to VAO in Feedback()
