@@ -12,7 +12,11 @@
 #include <fstream>
 #include <string>
 #include <vector>
-#include <unistd.h>
+#include <algorithm>
+
+#ifdef _WIN32
+#define M_PI 3.14159265358979323846f
+#endif
 
 
 using namespace std;
@@ -44,6 +48,10 @@ GLuint LoadShaders(const char * vertex_file_path,const char * fragment_file_path
 	    VertexShaderCode += "\n" + Line;
 	VertexShaderStream.close();
 	}
+	else
+	{
+		printf("Could not open vertex shader file: %s\n", vertex_file_path);
+	}
 
 	// Read the Fragment Shader code from the file
 	std::string FragmentShaderCode;
@@ -53,6 +61,10 @@ GLuint LoadShaders(const char * vertex_file_path,const char * fragment_file_path
 	while(getline(FragmentShaderStream, Line))
 	    FragmentShaderCode += "\n" + Line;
 	FragmentShaderStream.close();
+	}
+	else
+	{
+		printf("Could not open fragment shader file: %s\n", fragment_file_path);
 	}
 
 	GLint Result = GL_FALSE;
@@ -117,7 +129,7 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 */
 void Render()
 {
-  glClearColor(0.6,0.6,0.6,0.0);
+  glClearColor(0.6f,0.6f,0.6f,0.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   glUseProgram(program);
@@ -141,8 +153,8 @@ void LoadPoints()
   //Create Points
   //points.push_back(glm::vec3(0.0f, 0.0f, 0.0f)); //point at origin
  
-  for (float i = -1; i <= 1; i+= 0.1)
-    for (float j = -1; j <= 1; j+= 0.1)
+  for (float i = -1; i <= 1; i+= 0.1f)
+    for (float j = -1; j <= 1; j+= 0.1f)
        points.push_back(glm::vec3(i,1,j));
 
   //Pass to Shaders
@@ -150,8 +162,8 @@ void LoadPoints()
 
   glBindVertexArray(vao);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * points.size() * sizeof(glm::vec3), NULL, GL_DYNAMIC_DRAW);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(GLfloat) * points.size() * sizeof(glm::vec3), &points[0][0]);
+  glBufferData(GL_ARRAY_BUFFER, points.size() * sizeof(glm::vec3), NULL, GL_DYNAMIC_DRAW);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, points.size() * sizeof(glm::vec3), &points[0][0]);
 
 
   glUseProgram(0); //unbind
@@ -185,7 +197,8 @@ void Feedback()
       glFlush();
 
       // Fetch and print results
-      GLfloat buf[sizeof(GLfloat) * points.size() * sizeof(glm::vec3)];
+	  GLfloat* buf = new GLfloat[sizeof(GLfloat) * points.size() * sizeof(glm::vec3)];
+
       glGetBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, sizeof(buf), buf);
 
 	  //for (int j = 0; j<points.size(); j+=3)
