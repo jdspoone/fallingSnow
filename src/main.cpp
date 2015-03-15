@@ -230,6 +230,34 @@ void LoadMVP()
    
 }
 
+
+void setupRenderingContext()
+{
+  //Loading shaders, will need to modify and add Geometry Shader
+  program = LoadShaders("vertexShader.glsl", "fragmentShader.glsl");
+
+  //This has to be here and not in the LoadShaders apparently?
+  const GLchar* feedbackVaryings[] = { "outVec" };
+  glTransformFeedbackVaryings(program, 1, feedbackVaryings, GL_INTERLEAVED_ATTRIBS);
+  glLinkProgram(program); // And I have to call this again?
+
+  //Where to pass in vertices to the shaders
+  vertexLocation = glGetAttribLocation(program, "inVec");
+
+  // Create VAO
+  glGenVertexArrays(1, &vao);
+
+  // Create VBO
+  glGenBuffers(1, &vbo); //Attatched to VAO in LoadPoints(), and Render()
+
+  // Create TBO
+  glGenBuffers(1, &tbo); //Attatched to VAO in Feedback()
+
+  glEnable(GL_PROGRAM_POINT_SIZE); //Will remove after geometry shader is implemented, maybe
+  glEnable(GL_DEPTH_TEST);
+}
+
+
 int main(int argc, char *argv[])
 {
   // Initialize GLFW
@@ -261,29 +289,9 @@ int main(int argc, char *argv[])
     exit(EXIT_FAILURE);
   }
   
-  //Loading shaders, will need to modify and add Geometry Shader
-  program = LoadShaders("vertexShader.glsl", "fragmentShader.glsl");
-
-  //This has to be here and not in the LoadShaders apparently?
-  const GLchar* feedbackVaryings[] = { "outVec" };
-  glTransformFeedbackVaryings(program, 1, feedbackVaryings, GL_INTERLEAVED_ATTRIBS);
-  glLinkProgram(program); // And I have to call this again?
-
-  //Where to pass in vertices to the shaders
-  vertexLocation = glGetAttribLocation(program, "inVec");
-
-  // Create VAO
-  glGenVertexArrays(1, &vao);
-
-  // Create VBO
-  glGenBuffers(1, &vbo); //Attatched to VAO in LoadPoints(), and Render()
-
-  // Create TBO
-  glGenBuffers(1, &tbo); //Attatched to VAO in Feedback()
-
-  glEnable(GL_PROGRAM_POINT_SIZE); //Will remove after geometry shader is implemented, maybe
-  glEnable(GL_DEPTH_TEST);
-  LoadMVP(); //No movement yet, just static camera	
+  setupRenderingContext();
+  
+  LoadMVP(); //No movement yet, just static camera
   LoadPoints(); //Load snow
   while(!glfwWindowShouldClose(window))
   {
