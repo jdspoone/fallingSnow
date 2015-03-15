@@ -153,7 +153,6 @@ void LoadPoints()
   glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * points.size() * sizeof(glm::vec3), NULL, GL_DYNAMIC_DRAW);
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(GLfloat) * points.size() * sizeof(glm::vec3), &points[0][0]);
 
-
   glUseProgram(0); //unbind
  
 }
@@ -162,11 +161,7 @@ void Feedback()
 {
   glEnable(GL_RASTERIZER_DISCARD);
   glUseProgram(program); //Bind
-  
   glBindVertexArray(vao);
-  glEnableVertexAttribArray(vertexLocation);
-  glVertexAttribPointer(vertexLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
-  glBindBuffer(GL_ARRAY_BUFFER, vbo);
   glBindBuffer(GL_ARRAY_BUFFER, tbo);
   
 
@@ -189,7 +184,7 @@ void Feedback()
       glGetBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, sizeof(buf), buf);
 
 	  //for (int j = 0; j<points.size(); j+=3)
-        // printf("%f %f %f\n", buf[j], buf[j+1], buf[j+2]);
+         //printf("%f %f %f\n", buf[j], buf[j+1], buf[j+2]);
 			
       // Swap the 2 buffers
       std::swap(vbo, tbo);
@@ -199,7 +194,8 @@ void Feedback()
  
   glDisable(GL_RASTERIZER_DISCARD);
   //printf("\n");
-
+  
+  glBindVertexArray(0);
   glUseProgram(0); //Unbind
 }
 
@@ -270,11 +266,10 @@ int main(int argc, char *argv[])
   //Loading shaders, will need to modify and add Geometry Shader
   program = LoadShaders("vertexShader.glsl", "fragmentShader.glsl");
 
+  //This has to be here and not in the LoadShaders apparently?
   const GLchar* feedbackVaryings[] = { "outVec" };
   glTransformFeedbackVaryings(program, 1, feedbackVaryings, GL_INTERLEAVED_ATTRIBS);
-
-  glLinkProgram(program);
-  glUseProgram(program);
+  glLinkProgram(program); // And I have to call this again?
 
   //Where to pass in vertices to the shaders
   vertexLocation = glGetAttribLocation(program, "inVec");
@@ -283,12 +278,10 @@ int main(int argc, char *argv[])
   glGenVertexArrays(1, &vao);
 
   // Create VBO
-  glGenBuffers(1, &vbo);
+  glGenBuffers(1, &vbo); //Attatched to VAO in LoadPoints()
 
   // Create TBO
-  glGenBuffers(1, &tbo);
-
-  glUseProgram(0); //unbind
+  glGenBuffers(1, &tbo); //Attatched to VAO in Feedback()
 
   glEnable(GL_PROGRAM_POINT_SIZE); //Will remove after geometry shader is implemented, maybe
   glEnable(GL_DEPTH_TEST);
@@ -299,9 +292,7 @@ int main(int argc, char *argv[])
     glfwPollEvents();	//For key & mouse events
     Render();	//Draw to Screen
     Feedback(); //Get back vectors after being transformed by shaders
-	
-	//usleep(999999);
-	}
+  }
 
   //Cleanup 
   glDeleteBuffers(1, &vbo);
