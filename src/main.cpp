@@ -162,6 +162,8 @@ void LoadPoints()
         velocity = ((rand() % 10 + 9)/1000.0f); 
         points.push_back(glm::vec4(x,y,z,velocity));
     }
+
+   cout <<"Particle Count: "<<points.size()<<endl;
   //Attach to buffer and vao
   glBindVertexArray(vao);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
@@ -289,15 +291,43 @@ int main(int argc, char *argv[])
     exit(EXIT_FAILURE);
   }
   
-  setupRenderingContext();
+  /*
+  * Sets up VAO, VBO, and TBO
+  */
+  setupRenderingContext(); 
   
-  LoadMVP(); //No movement yet, just static camera
-  LoadPoints(); //Load snow
+  /*
+  * Sets up Model-View-Projection transformation matrix
+  * TODO: Controllable camera
+  */
+  LoadMVP();
+
+  /*
+  * Loads the Snow Particles
+  * Fixed amount
+  */
+  LoadPoints(); 
+
   while(!glfwWindowShouldClose(window))
   {
-    glfwPollEvents();	//For key & mouse events
-    Render();	//Draw to Screen
-    Feedback(); //Get back vectors after being transformed by shaders
+    /*
+    * Polls for Mouse & Keyboard Events
+    */
+    glfwPollEvents();
+
+    /*
+    * Draws scene to screen
+    */
+    Render();
+
+    /*
+    * GPU acceleration
+    * Gets back vectors after being transformed by shaders.
+    * TODO: Bounds checking, Particle insertion & deletion, sorting
+    *       (consider OpenCL/CUDA for CPU accelerated inspection)
+    */
+    Feedback(); 
+
   }
 
   //Cleanup 
