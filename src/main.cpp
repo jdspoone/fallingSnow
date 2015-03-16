@@ -26,7 +26,6 @@ GLuint program;
 GLuint vertexLocation;
 GLuint vao, vbo, tbo;
 
-
 GLuint loadShader(GLenum type, const GLchar *path)
 {
   // For logging purposes...
