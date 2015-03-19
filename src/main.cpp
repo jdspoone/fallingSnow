@@ -85,16 +85,18 @@ GLuint loadShader(GLenum type, const GLchar *path)
 *	Loads GLSL shaders
 *	Credit to NeHe OpenGL Tutorials for this code
 */
-GLuint LoadShaders(const char * vertex_file_path,const char * fragment_file_path)
+GLuint LoadShaders(const char *vPath, const char *gPath, const char *fPath)
 {
 	// Create the shaders
-	GLuint VertexShaderID = loadShader(GL_VERTEX_SHADER, vertex_file_path);
-	GLuint FragmentShaderID = loadShader(GL_FRAGMENT_SHADER, fragment_file_path);
+	GLuint VertexShaderID = loadShader(GL_VERTEX_SHADER, vPath);
+  GLuint GeometryShaderID = loadShader(GL_GEOMETRY_SHADER, gPath);
+	GLuint FragmentShaderID = loadShader(GL_FRAGMENT_SHADER, fPath);
 
 	// Link the program
 	fprintf(stdout, "Linking program\n");
 	GLuint ProgramID = glCreateProgram();
 	glAttachShader(ProgramID, VertexShaderID);
+	glAttachShader(ProgramID, GeometryShaderID);
 	glAttachShader(ProgramID, FragmentShaderID);
 	glLinkProgram(ProgramID);
 
@@ -109,6 +111,7 @@ GLuint LoadShaders(const char * vertex_file_path,const char * fragment_file_path
 	fprintf(stdout, "Linking Check: %s\n", &ProgramErrorMessage[0]);
 
 	glDeleteShader(VertexShaderID);
+	glDeleteShader(GeometryShaderID);
 	glDeleteShader(FragmentShaderID);
 
 	return ProgramID;
@@ -138,8 +141,7 @@ void Render()
 
   glDrawArrays(GL_POINTS, 0, (int)points.size());
 
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-  glBindVertexArray(0); 
+  glBindVertexArray(0);
   glUseProgram(0);
   
   glfwSwapBuffers(window);
@@ -147,22 +149,9 @@ void Render()
 
 void LoadPoints()
 {
-  //Create Points
-  float x,y,z,velocity = 1.0f;
-  /* initialize random seed: */
-  srand (time(NULL));
- for (float k = -1; k <= 1; k+= 0.1f)
-  for (float i = -1; i <= 1; i+= 0.1f)
-    for (float j = -1; j <= 1; j+= 0.1f)
-    {
-        x = ((rand() % 10 + 9)/100.0f) + k; 
-        y = ((rand() % 10 + 9)/100.0f) + i; 
-        z = ((rand() % 10 + 6)/100.0f) + j;
-        velocity = ((rand() % 10 + 9)/1000.0f); 
-        points.push_back(glm::vec4(x,y,z,velocity));
-    }
+  points.push_back(glm::vec4(0.0, 0.0, 0.0, 1.0));
 
-   cout <<"Particle Count: "<<points.size()<<endl;
+  cout <<"Particle Count: "<<points.size()<<endl;
   //Attach to buffer and vao
   glBindVertexArray(vao);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
@@ -172,31 +161,6 @@ void LoadPoints()
   glBindVertexArray(0); 
 }
 
-void Feedback()
-{
-  glEnable(GL_RASTERIZER_DISCARD);
-  glUseProgram(program); //Bind
-  glBindVertexArray(vao);
-  glBindBuffer(GL_ARRAY_BUFFER, tbo);
-
-  // Re-bind our output buffer
-  glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, tbo);
-  glBufferData(GL_ARRAY_BUFFER, points.size() * sizeof(glm::vec4), NULL, GL_DYNAMIC_READ);
-      
-  // Perform the feedback transform
-  glBeginTransformFeedback(GL_POINTS);
-  glDrawArrays(GL_POINTS, 0, (int)points.size());
-  glEndTransformFeedback();
-  glFlush();
-			
-  // Swap the 2 buffers
-  std::swap(vbo, tbo);
-	  
-  glDisable(GL_RASTERIZER_DISCARD);
-  
-  glBindVertexArray(0);
-  glUseProgram(0); //Unbind
-}
 
 /*
 * Model-View-Projection Transformation Matrix
@@ -225,8 +189,13 @@ void LoadMVP()
 
   //Pass through to shaders
   glUseProgram(program); //bind
-  GLuint MatrixID = glGetUniformLocation(program, "MVP"); 
+  
+  GLuint MatrixID = glGetUniformLocation(program, "MVP");
   glUniformMatrix4fv(MatrixID,  1, GL_FALSE, &MVP[0][0]);
+  
+  GLuint cameraPositionID = glGetUniformLocation(program, "cameraPosition");
+  glUniform3fv(cameraPositionID, 1, &cameraPosition[0]);
+  
   glUseProgram(0); //unbind
    
 }
@@ -235,15 +204,10 @@ void LoadMVP()
 void setupRenderingContext()
 {
   //Loading shaders, will need to modify and add Geometry Shader
-  program = LoadShaders("vertexShader.glsl", "fragmentShader.glsl");
-
-  //This has to be here and not in the LoadShaders apparently?
-  const GLchar* feedbackVaryings[] = { "outVec" };
-  glTransformFeedbackVaryings(program, 1, feedbackVaryings, GL_INTERLEAVED_ATTRIBS);
-  glLinkProgram(program); // And I have to call this again?
+  program = LoadShaders("vertexShader.glsl", "geometryShader.glsl", "fragmentShader.glsl");
 
   //Where to pass in vertices to the shaders
-  vertexLocation = glGetAttribLocation(program, "inVec");
+  vertexLocation = glGetAttribLocation(program, "previousPosition");
 
   // Create VAO
   glGenVertexArrays(1, &vao);
@@ -251,10 +215,6 @@ void setupRenderingContext()
   // Create VBO
   glGenBuffers(1, &vbo); //Attatched to VAO in LoadPoints(), and Render()
 
-  // Create TBO
-  glGenBuffers(1, &tbo); //Attatched to VAO in Feedback()
-
-  glEnable(GL_PROGRAM_POINT_SIZE); //Will remove after geometry shader is implemented, maybe
   glEnable(GL_DEPTH_TEST);
 }
 
@@ -290,48 +250,21 @@ int main(int argc, char *argv[])
     exit(EXIT_FAILURE);
   }
   
-  /*
-  * Sets up VAO, VBO, and TBO
-  */
-  setupRenderingContext(); 
+  setupRenderingContext();
   
-  /*
-  * Sets up Model-View-Projection transformation matrix
-  * TODO: Controllable camera
-  */
   LoadMVP();
 
-  /*
-  * Loads the Snow Particles
-  * Fixed amount
-  */
-  LoadPoints(); 
+  LoadPoints();
 
   while(!glfwWindowShouldClose(window))
   {
-    /*
-    * Polls for Mouse & Keyboard Events
-    */
     glfwPollEvents();
-
-    /*
-    * Draws scene to screen
-    */
     Render();
-
-    /*
-    * GPU acceleration
-    * Gets back vectors after being transformed by shaders.
-    * TODO: Bounds checking, Particle insertion & deletion, sorting
-    *       (consider OpenCL/CUDA for CPU accelerated inspection)
-    */
-    Feedback(); 
 
   }
 
   //Cleanup 
   glDeleteBuffers(1, &vbo);
-  glDeleteBuffers(1, &tbo);
   glDeleteVertexArrays(1, &vao);
   glDeleteProgram(program);
   glfwDestroyWindow(window);
