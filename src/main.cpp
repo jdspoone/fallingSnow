@@ -61,8 +61,8 @@ GLuint loadShader(GLenum type, const GLchar *path)
 		printf("Could not open %s shader file: %s\n", typeName, path);
 	}
   
-	GLint Result = GL_FALSE;
-	int InfoLogLength;
+	GLint result = GL_FALSE;
+	int infoLogLength;
   
 	// Compile the shader
 	printf("Compiling %s shader: %s\n", typeName, path);
@@ -71,63 +71,57 @@ GLuint loadShader(GLenum type, const GLchar *path)
 	glCompileShader(shader);
 
 	// Check Vertex Shader
-	glGetShaderiv(shader, GL_COMPILE_STATUS, &Result);
-	glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &InfoLogLength);
-	std::vector<char> shaderErrorMessage(InfoLogLength);
-	glGetShaderInfoLog(shader, InfoLogLength, NULL, &shaderErrorMessage[0]);
+	glGetShaderiv(shader, GL_COMPILE_STATUS, &result);
+	glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infoLogLength);
+	std::vector<char> shaderErrorMessage(infoLogLength);
+	glGetShaderInfoLog(shader, infoLogLength, NULL, &shaderErrorMessage[0]);
 	fprintf(stdout, "Checking %s shader: %s\n", typeName, &shaderErrorMessage[0]);
   
   return shader;
 }
 
 
-/*
-*	Loads GLSL shaders
-*	Credit to NeHe OpenGL Tutorials for this code
-*/
-GLuint LoadShaders(const char *vPath, const char *gPath, const char *fPath)
+GLuint loadShaders(const char *vPath, const char *gPath, const char *fPath)
 {
 	// Create the shaders
-	GLuint VertexShaderID = loadShader(GL_VERTEX_SHADER, vPath);
-  GLuint GeometryShaderID = loadShader(GL_GEOMETRY_SHADER, gPath);
-	GLuint FragmentShaderID = loadShader(GL_FRAGMENT_SHADER, fPath);
+	GLuint vertexShaderID = loadShader(GL_VERTEX_SHADER, vPath);
+  GLuint geometryShaderID = loadShader(GL_GEOMETRY_SHADER, gPath);
+	GLuint fragmentShaderID = loadShader(GL_FRAGMENT_SHADER, fPath);
 
 	// Link the program
 	fprintf(stdout, "Linking program\n");
-	GLuint ProgramID = glCreateProgram();
-	glAttachShader(ProgramID, VertexShaderID);
-	glAttachShader(ProgramID, GeometryShaderID);
-	glAttachShader(ProgramID, FragmentShaderID);
-	glLinkProgram(ProgramID);
+	GLuint programID = glCreateProgram();
+	glAttachShader(programID, vertexShaderID);
+	glAttachShader(programID, geometryShaderID);
+	glAttachShader(programID, fragmentShaderID);
+	glLinkProgram(programID);
 
-	GLint Result = GL_FALSE;
-	int InfoLogLength;
+	GLint result = GL_FALSE;
+	int infoLogLength;
 
 	// Check the program
-	glGetProgramiv(ProgramID, GL_LINK_STATUS, &Result);
-	glGetProgramiv(ProgramID, GL_INFO_LOG_LENGTH, &InfoLogLength);
-	std::vector<char> ProgramErrorMessage( max(InfoLogLength, int(1)) );
-	glGetProgramInfoLog(ProgramID, InfoLogLength, NULL, &ProgramErrorMessage[0]);
-	fprintf(stdout, "Linking Check: %s\n", &ProgramErrorMessage[0]);
+	glGetProgramiv(programID, GL_LINK_STATUS, &result);
+	glGetProgramiv(programID, GL_INFO_LOG_LENGTH, &infoLogLength);
+	std::vector<char> programErrorMessage( max(infoLogLength, int(1)) );
+	glGetProgramInfoLog(programID, infoLogLength, NULL, &programErrorMessage[0]);
+	fprintf(stdout, "Linking Check: %s\n", &programErrorMessage[0]);
 
-	glDeleteShader(VertexShaderID);
-	glDeleteShader(GeometryShaderID);
-	glDeleteShader(FragmentShaderID);
+	glDeleteShader(vertexShaderID);
+	glDeleteShader(geometryShaderID);
+	glDeleteShader(fragmentShaderID);
 
-	return ProgramID;
+	return programID;
 }
 
-// Keyboard callback function.
+
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
     glfwSetWindowShouldClose(window, GL_TRUE);
 }
 
-/*
-* Draw Calls
-*/
-void Render()
+
+void render()
 {
   glClearColor(0.6f,0.6f,0.6f,0.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -147,7 +141,8 @@ void Render()
   glfwSwapBuffers(window);
 }
 
-void LoadPoints()
+
+void loadPoints()
 {
   points.push_back(glm::vec4(0.0, 0.0, 0.0, 1.0));
 
@@ -162,10 +157,7 @@ void LoadPoints()
 }
 
 
-/*
-* Model-View-Projection Transformation Matrix
-*/
-void LoadMVP()
+void loadMVP()
 {
   //Camera
   glm::vec3 cameraPosition = glm::vec3(0.0f,3.0f,3.0f);
@@ -203,8 +195,7 @@ void LoadMVP()
 
 void setupRenderingContext()
 {
-  //Loading shaders, will need to modify and add Geometry Shader
-  program = LoadShaders("vertexShader.glsl", "geometryShader.glsl", "fragmentShader.glsl");
+  program = loadShaders("vertexShader.glsl", "geometryShader.glsl", "fragmentShader.glsl");
 
   //Where to pass in vertices to the shaders
   vertexLocation = glGetAttribLocation(program, "previousPosition");
@@ -213,7 +204,7 @@ void setupRenderingContext()
   glGenVertexArrays(1, &vao);
 
   // Create VBO
-  glGenBuffers(1, &vbo); //Attatched to VAO in LoadPoints(), and Render()
+  glGenBuffers(1, &vbo); // Attatched to VAO in loadPoints(), and render()
 
   glEnable(GL_DEPTH_TEST);
 }
@@ -252,14 +243,14 @@ int main(int argc, char *argv[])
   
   setupRenderingContext();
   
-  LoadMVP();
+  loadMVP();
 
-  LoadPoints();
+  loadPoints();
 
   while(!glfwWindowShouldClose(window))
   {
     glfwPollEvents();
-    Render();
+    render();
 
   }
 
