@@ -142,10 +142,42 @@ void render()
 }
 
 
+void feedBack()
+{
+  glUseProgram(program); //Bind
+  
+  glBindVertexArray(vao);
+  
+  glBindBuffer(GL_ARRAY_BUFFER, tbo);
+
+  // Re-bind our output buffer
+  glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, tbo);
+  glBufferData(GL_ARRAY_BUFFER, points.size() * sizeof(glm::vec4), NULL, GL_DYNAMIC_READ);
+      
+  // Perform the feedback transform
+  glEnable(GL_RASTERIZER_DISCARD);
+  glBeginTransformFeedback(GL_TRIANGLES);
+  glDrawArrays(GL_POINTS, 0, (int)points.size());
+  glEndTransformFeedback();
+  glDisable(GL_RASTERIZER_DISCARD);
+  glFlush();
+  
+  glBindVertexArray(0);
+  
+  glUseProgram(0); //Unbind
+  
+  // Swap the 2 buffers
+  std::swap(vbo, tbo);
+}
+
 void loadPoints()
 {
+  points.push_back(glm::vec4(1.0, 1.0, 0.0, 1.0));
+  points.push_back(glm::vec4(-1.0, 1.0, 0.0, 1.0));
   points.push_back(glm::vec4(0.0, 0.0, 0.0, 1.0));
-
+  points.push_back(glm::vec4(1.0, -1.0, 0.0, 1.0));
+  points.push_back(glm::vec4(-1.0, -1.0, 0.0, 1.0));
+  
   cout <<"Particle Count: "<<points.size()<<endl;
   //Attach to buffer and vao
   glBindVertexArray(vao);
@@ -160,7 +192,7 @@ void loadPoints()
 void loadMVP()
 {
   //Camera
-  glm::vec3 cameraPosition = glm::vec3(0.0f,3.0f,3.0f);
+  glm::vec3 cameraPosition = glm::vec3(0.0f,0.0f,3.0f);
   glm::vec3 cameraTarget = glm::vec3(0.0f,0.0f,0.0f);
   glm:: vec3 upVector = glm::vec3(0.0f,1.0f,0.0f);
   glm::mat4 CameraMatrix = glm::lookAt(cameraPosition, cameraTarget, upVector);
@@ -197,6 +229,10 @@ void setupRenderingContext()
 {
   program = loadShaders("vertexShader.glsl", "geometryShader.glsl", "fragmentShader.glsl");
 
+  const GLchar* feedbackVaryings[1] = { "nextPosition" };
+  glTransformFeedbackVaryings(program, 1, feedbackVaryings, GL_INTERLEAVED_ATTRIBS);
+  glLinkProgram(program);
+
   //Where to pass in vertices to the shaders
   vertexLocation = glGetAttribLocation(program, "previousPosition");
 
@@ -205,6 +241,9 @@ void setupRenderingContext()
 
   // Create VBO
   glGenBuffers(1, &vbo); // Attatched to VAO in loadPoints(), and render()
+
+  // Create TBO
+  glGenBuffers(1, &tbo); //Attatched to VAO in Feedback()
 
   glEnable(GL_DEPTH_TEST);
 }
@@ -251,7 +290,7 @@ int main(int argc, char *argv[])
   {
     glfwPollEvents();
     render();
-
+    feedBack();
   }
 
   //Cleanup 
