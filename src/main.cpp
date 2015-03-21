@@ -152,8 +152,7 @@ void feedBack()
 
   // Re-bind our output buffer
   glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, tbo);
-  glBufferData(GL_ARRAY_BUFFER, points.size() * sizeof(glm::vec4), NULL, GL_DYNAMIC_READ);
-      
+  
   // Perform the feedback transform
   glEnable(GL_RASTERIZER_DISCARD);
   glBeginTransformFeedback(GL_TRIANGLES);
@@ -173,14 +172,15 @@ void feedBack()
 void loadPoints()
 {
   points.push_back(glm::vec4(1.0, 1.0, 0.0, 1.0));
-  points.push_back(glm::vec4(-1.0, 1.0, 0.0, 1.0));
-  points.push_back(glm::vec4(0.0, 0.0, 0.0, 1.0));
-  points.push_back(glm::vec4(1.0, -1.0, 0.0, 1.0));
-  points.push_back(glm::vec4(-1.0, -1.0, 0.0, 1.0));
   
   cout <<"Particle Count: "<<points.size()<<endl;
   //Attach to buffer and vao
   glBindVertexArray(vao);
+  
+  glBindBuffer(GL_ARRAY_BUFFER, tbo);
+  glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, tbo);
+  glBufferData(GL_ARRAY_BUFFER, points.size() * sizeof(glm::vec4), NULL, GL_DYNAMIC_READ);
+  
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
   glBufferData(GL_ARRAY_BUFFER, points.size() * sizeof(glm::vec4), NULL, GL_DYNAMIC_DRAW);
   glBufferSubData(GL_ARRAY_BUFFER, 0, points.size() * sizeof(glm::vec4), &points[0][0]);
@@ -290,7 +290,22 @@ int main(int argc, char *argv[])
   {
     glfwPollEvents();
     render();
+    
+    GLfloat data[4];
+    
+    glGetBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(data), data);
+    printf("Before - VBO contains (%f %f %f %f)\n", data[0], data[1], data[2], data[3]);
+    glGetBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, sizeof(data), data);
+    printf("Before - TBO contains (%f %f %f %f)\n", data[0], data[1], data[2], data[3]);
+    
     feedBack();
+
+    glGetBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(data), data);
+    printf("After - VBO contains (%f %f %f %f)\n", data[0], data[1], data[2], data[3]);
+    glGetBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, sizeof(data), data);
+    printf("After - TBO contains (%f %f %f %f)\n", data[0], data[1], data[2], data[3]);
+    
+    printf("\n");
   }
 
   //Cleanup 
