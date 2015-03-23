@@ -85,14 +85,14 @@ GLuint loadSnowShaders(const char *vPath, const char *gPath, const char *fPath)
 {
 	// Create the shaders
 	GLuint vertexID = loadShader(GL_VERTEX_SHADER, vPath);
-//	GLuint geometryID = loadShader(GL_GEOMETRY_SHADER, gPath);
+	GLuint geometryID = loadShader(GL_GEOMETRY_SHADER, gPath);
 	GLuint fragmentID = loadShader(GL_FRAGMENT_SHADER, fPath);
 
 	// Link the program
 	fprintf(stdout, "Linking snow program\n");
 	GLuint programID = glCreateProgram();
 	glAttachShader(programID, vertexID);
-//	glAttachShader(programID, geometryID);
+	glAttachShader(programID, geometryID);
 	glAttachShader(programID, fragmentID);
 	glLinkProgram(programID);
 
@@ -107,7 +107,7 @@ GLuint loadSnowShaders(const char *vPath, const char *gPath, const char *fPath)
 	fprintf(stdout, "Linking Check: %s\n", &errorMessage[0]);
 
 	glDeleteShader(vertexID);
-//	glDeleteShader(geometryID);
+	glDeleteShader(geometryID);
 	glDeleteShader(fragmentID);
 
 	return programID;
