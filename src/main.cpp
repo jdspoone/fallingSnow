@@ -22,7 +22,7 @@ using namespace std;
 
 GLFWwindow* window = NULL;
 vector<glm::vec4> points;
-GLuint program;
+GLuint snowProgram, feedbackProgram;
 GLuint vertexLocation;
 GLuint vao, vbo, tbo;
 
@@ -61,8 +61,8 @@ GLuint loadShader(GLenum type, const GLchar *path)
 		printf("Could not open %s shader file: %s\n", typeName, path);
 	}
   
-	GLint Result = GL_FALSE;
-	int InfoLogLength;
+	GLint result = GL_FALSE;
+	int logLength;
   
 	// Compile the shader
 	printf("Compiling %s shader: %s\n", typeName, path);
@@ -71,47 +71,46 @@ GLuint loadShader(GLenum type, const GLchar *path)
 	glCompileShader(shader);
 
 	// Check Vertex Shader
-	glGetShaderiv(shader, GL_COMPILE_STATUS, &Result);
-	glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &InfoLogLength);
-	std::vector<char> shaderErrorMessage(InfoLogLength);
-	glGetShaderInfoLog(shader, InfoLogLength, NULL, &shaderErrorMessage[0]);
+	glGetShaderiv(shader, GL_COMPILE_STATUS, &result);
+	glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &logLength);
+	std::vector<char> shaderErrorMessage(logLength);
+	glGetShaderInfoLog(shader, logLength, NULL, &shaderErrorMessage[0]);
 	fprintf(stdout, "Checking %s shader: %s\n", typeName, &shaderErrorMessage[0]);
   
   return shader;
 }
 
 
-/*
-*	Loads GLSL shaders
-*	Credit to NeHe OpenGL Tutorials for this code
-*/
-GLuint LoadShaders(const char * vertex_file_path,const char * fragment_file_path)
+GLuint loadSnowShaders(const char *vPath, const char *gPath, const char *fPath)
 {
 	// Create the shaders
-	GLuint VertexShaderID = loadShader(GL_VERTEX_SHADER, vertex_file_path);
-	GLuint FragmentShaderID = loadShader(GL_FRAGMENT_SHADER, fragment_file_path);
+	GLuint vertexID = loadShader(GL_VERTEX_SHADER, vPath);
+//	GLuint geometryID = loadShader(GL_GEOMETRY_SHADER, gPath);
+	GLuint fragmentID = loadShader(GL_FRAGMENT_SHADER, fPath);
 
 	// Link the program
-	fprintf(stdout, "Linking program\n");
-	GLuint ProgramID = glCreateProgram();
-	glAttachShader(ProgramID, VertexShaderID);
-	glAttachShader(ProgramID, FragmentShaderID);
-	glLinkProgram(ProgramID);
+	fprintf(stdout, "Linking snow program\n");
+	GLuint programID = glCreateProgram();
+	glAttachShader(programID, vertexID);
+//	glAttachShader(programID, geometryID);
+	glAttachShader(programID, fragmentID);
+	glLinkProgram(programID);
 
-	GLint Result = GL_FALSE;
-	int InfoLogLength;
+	GLint result = GL_FALSE;
+	int logLength;
 
 	// Check the program
-	glGetProgramiv(ProgramID, GL_LINK_STATUS, &Result);
-	glGetProgramiv(ProgramID, GL_INFO_LOG_LENGTH, &InfoLogLength);
-	std::vector<char> ProgramErrorMessage( max(InfoLogLength, int(1)) );
-	glGetProgramInfoLog(ProgramID, InfoLogLength, NULL, &ProgramErrorMessage[0]);
-	fprintf(stdout, "Linking Check: %s\n", &ProgramErrorMessage[0]);
+	glGetProgramiv(programID, GL_LINK_STATUS, &result);
+	glGetProgramiv(programID, GL_INFO_LOG_LENGTH, &logLength);
+	std::vector<char> errorMessage( max(logLength, int(1)) );
+	glGetProgramInfoLog(programID, logLength, NULL, &errorMessage[0]);
+	fprintf(stdout, "Linking Check: %s\n", &errorMessage[0]);
 
-	glDeleteShader(VertexShaderID);
-	glDeleteShader(FragmentShaderID);
+	glDeleteShader(vertexID);
+//	glDeleteShader(geometryID);
+	glDeleteShader(fragmentID);
 
-	return ProgramID;
+	return programID;
 }
 
 // Keyboard callback function.
@@ -121,6 +120,34 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
     glfwSetWindowShouldClose(window, GL_TRUE);
 }
 
+
+GLuint loadFeedbackShader(const char *vPath)
+{
+	// Create the shader
+	GLuint vertexID = loadShader(GL_VERTEX_SHADER, vPath);
+
+	// Link the program
+	fprintf(stdout, "Linking feedback program\n");
+	GLuint programID = glCreateProgram();
+	glAttachShader(programID, vertexID);
+	glLinkProgram(programID);
+
+	GLint result = GL_FALSE;
+	int logLength;
+
+	// Check the program
+	glGetProgramiv(programID, GL_LINK_STATUS, &result);
+	glGetProgramiv(programID, GL_INFO_LOG_LENGTH, &logLength);
+	std::vector<char> errorMessage( max(logLength, int(1)) );
+	glGetProgramInfoLog(programID, logLength, NULL, &errorMessage[0]);
+	fprintf(stdout, "Linking Check: %s\n", &errorMessage[0]);
+
+	glDeleteShader(vertexID);
+
+	return programID;
+}
+
+
 /*
 * Draw Calls
 */
@@ -129,7 +156,7 @@ void Render()
   glClearColor(0.6f,0.6f,0.6f,0.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  glUseProgram(program);
+  glUseProgram(snowProgram);
 
   glBindVertexArray(vao);
   glEnableVertexAttribArray(vertexLocation);
@@ -138,8 +165,7 @@ void Render()
 
   glDrawArrays(GL_POINTS, 0, (int)points.size());
 
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-  glBindVertexArray(0); 
+  glBindVertexArray(0);
   glUseProgram(0);
   
   glfwSwapBuffers(window);
@@ -175,7 +201,7 @@ void LoadPoints()
 void Feedback()
 {
   glEnable(GL_RASTERIZER_DISCARD);
-  glUseProgram(program); //Bind
+  glUseProgram(feedbackProgram); //Bind
   glBindVertexArray(vao);
   glBindBuffer(GL_ARRAY_BUFFER, tbo);
 
@@ -224,8 +250,8 @@ void LoadMVP()
   glm::mat4 MVP = ProjectionMatrix * CameraMatrix * ModelMatrix;
 
   //Pass through to shaders
-  glUseProgram(program); //bind
-  GLuint MatrixID = glGetUniformLocation(program, "MVP"); 
+  glUseProgram(snowProgram); //bind
+  GLuint MatrixID = glGetUniformLocation(snowProgram, "MVP");
   glUniformMatrix4fv(MatrixID,  1, GL_FALSE, &MVP[0][0]);
   glUseProgram(0); //unbind
    
@@ -234,16 +260,15 @@ void LoadMVP()
 
 void setupRenderingContext()
 {
-  //Loading shaders, will need to modify and add Geometry Shader
-  program = LoadShaders("vertexShader.glsl", "fragmentShader.glsl");
+  snowProgram = loadSnowShaders("vertexShader.glsl", "geometryShader.glsl", "fragmentShader.glsl");
 
-  //This has to be here and not in the LoadShaders apparently?
+  feedbackProgram = loadFeedbackShader("feedbackShader.glsl");
   const GLchar* feedbackVaryings[] = { "outVec" };
-  glTransformFeedbackVaryings(program, 1, feedbackVaryings, GL_INTERLEAVED_ATTRIBS);
-  glLinkProgram(program); // And I have to call this again?
+  glTransformFeedbackVaryings(feedbackProgram, 1, feedbackVaryings, GL_INTERLEAVED_ATTRIBS);
+  glLinkProgram(feedbackProgram);
 
   //Where to pass in vertices to the shaders
-  vertexLocation = glGetAttribLocation(program, "inVec");
+  vertexLocation = glGetAttribLocation(snowProgram, "inVec");
 
   // Create VAO
   glGenVertexArrays(1, &vao);
@@ -333,7 +358,8 @@ int main(int argc, char *argv[])
   glDeleteBuffers(1, &vbo);
   glDeleteBuffers(1, &tbo);
   glDeleteVertexArrays(1, &vao);
-  glDeleteProgram(program);
+  glDeleteProgram(snowProgram);
+  glDeleteProgram(feedbackProgram);
   glfwDestroyWindow(window);
   glfwTerminate();
   exit(EXIT_SUCCESS);
