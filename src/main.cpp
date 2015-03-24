@@ -177,14 +177,14 @@ void LoadPoints()
   float x,y,z,velocity = 1.0f;
   /* initialize random seed: */
   srand (time(NULL));
- for (float k = -1; k <= 1; k+= 0.1f)
-  for (float i = -1; i <= 1; i+= 0.1f)
-    for (float j = -1; j <= 1; j+= 0.1f)
+ for (float k = -1; k <= 1; k+= 0.03f)
+  for (float i = -1; i <= 1; i+= 0.03f)
+    for (float j = -1; j <= 1; j+= 0.03f)
     {
         x = ((rand() % 10 + 9)/100.0f) + k; 
         y = ((rand() % 10 + 9)/100.0f) + i; 
         z = ((rand() % 10 + 6)/100.0f) + j;
-        velocity = ((rand() % 10 + 9)/1000.0f); 
+        velocity = ((rand() % 10 + 9)/20000.0f); 
         points.push_back(glm::vec4(x,y,z,velocity));
     }
 
@@ -230,9 +230,9 @@ void Feedback()
 void LoadMVP()
 {
   //Camera
-  glm::vec3 cameraPosition = glm::vec3(0.0f,3.0f,3.0f);
-  glm::vec3 cameraTarget = glm::vec3(0.0f,0.0f,0.0f);
-  glm:: vec3 upVector = glm::vec3(0.0f,1.0f,0.0f);
+  glm::vec3 cameraPosition = glm::vec3(0.0f,0.0f,0.0f); //0,3,3
+  glm::vec3 cameraTarget = glm::vec3(1.0f,0.0f,1.0f); //0,0,0
+  glm:: vec3 upVector = glm::vec3(0.0f,1.0f,0.0f); //0,1,0
   glm::mat4 CameraMatrix = glm::lookAt(cameraPosition, cameraTarget, upVector);
 
   //Projection
