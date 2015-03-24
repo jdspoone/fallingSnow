@@ -332,6 +332,13 @@ int main(int argc, char *argv[])
   */
   LoadPoints(); 
 
+  /*
+  * Sets blending mode for snowflakes
+  * TODO: configure it properly
+  */
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
   while(!glfwWindowShouldClose(window))
   {
     /*
