@@ -27,6 +27,15 @@ GLuint snowProgram, feedbackProgram;
 GLuint vertexLocation;
 GLuint vao, vbo, tbo;
 
+//====== Camera Settings =======
+glm::vec3 cameraPosition = glm::vec3(0.0f); //initial starting position
+glm::vec3 cameraDirection;
+glm::vec3 cameraRight; 
+GLfloat camera_step = 0.01f;
+GLfloat cameraTheta, cameraPhi = 0.0f;
+
+bool ScreenLock = false;
+int ScreenWidth, ScreenHeight;
 GLuint loadShader(GLenum type, const GLchar *path)
 {
   // For logging purposes...
@@ -80,7 +89,31 @@ GLuint loadShader(GLenum type, const GLchar *path)
   
   return shader;
 }
+GLuint loadFeedbackShader(const char *vPath)
+{
+	// Create the shader
+	GLuint vertexID = loadShader(GL_VERTEX_SHADER, vPath);
 
+	// Link the program
+	fprintf(stdout, "Linking feedback program\n");
+	GLuint programID = glCreateProgram();
+	glAttachShader(programID, vertexID);
+	glLinkProgram(programID);
+
+	GLint result = GL_FALSE;
+	int logLength;
+
+	// Check the program
+	glGetProgramiv(programID, GL_LINK_STATUS, &result);
+	glGetProgramiv(programID, GL_INFO_LOG_LENGTH, &logLength);
+	std::vector<char> errorMessage( max(logLength, int(1)) );
+	glGetProgramInfoLog(programID, logLength, NULL, &errorMessage[0]);
+	fprintf(stdout, "Linking Check: %s\n", &errorMessage[0]);
+
+	glDeleteShader(vertexID);
+
+	return programID;
+}
 
 GLuint loadSnowShaders(const char *vPath, const char *gPath, const char *fPath)
 {
@@ -114,40 +147,52 @@ GLuint loadSnowShaders(const char *vPath, const char *gPath, const char *fPath)
 	return programID;
 }
 
+
+/*
+* Event handler for mouse clicks
+*
+* When a mouse button is being held down, it enables ScreenLock
+*/
+void MouseButton(GLFWwindow * window, int button, int action, int mods)
+{
+	if (action == GLFW_PRESS)
+	{
+		ScreenLock = true;
+    }
+	if (action == GLFW_RELEASE)
+    {
+		ScreenLock = false;
+        glfwSetCursorPos(window, ScreenWidth/2.0, ScreenHeight/2.0);
+    }
+}
+
+/*
+* Handler for keeping track of mouse position
+*/
+void CursorPos(GLFWwindow * window, double xpos, double ypos)
+{
+	//Check if holding down mouse button
+	if (ScreenLock)
+	{
+	   cameraPhi   +=  0.00005 * (ScreenWidth/2.0 - xpos);
+	   cameraTheta +=  0.00005 * (ScreenHeight/2.0 - ypos);
+	}
+}
+
 // Keyboard callback function.
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
     glfwSetWindowShouldClose(window, GL_TRUE);
+  if (key == GLFW_KEY_W && (action == GLFW_PRESS || action == GLFW_REPEAT))
+    cameraPosition += cameraDirection * camera_step;
+  if (key == GLFW_KEY_S && (action == GLFW_PRESS || action == GLFW_REPEAT))
+    cameraPosition -= cameraDirection * camera_step;
+  if (key == GLFW_KEY_A && (action == GLFW_PRESS || action == GLFW_REPEAT))
+    cameraPosition -= cameraRight * camera_step;
+  if (key == GLFW_KEY_D && (action == GLFW_PRESS || action == GLFW_REPEAT))
+    cameraPosition += cameraRight * camera_step;
 }
-
-
-GLuint loadFeedbackShader(const char *vPath)
-{
-	// Create the shader
-	GLuint vertexID = loadShader(GL_VERTEX_SHADER, vPath);
-
-	// Link the program
-	fprintf(stdout, "Linking feedback program\n");
-	GLuint programID = glCreateProgram();
-	glAttachShader(programID, vertexID);
-	glLinkProgram(programID);
-
-	GLint result = GL_FALSE;
-	int logLength;
-
-	// Check the program
-	glGetProgramiv(programID, GL_LINK_STATUS, &result);
-	glGetProgramiv(programID, GL_INFO_LOG_LENGTH, &logLength);
-	std::vector<char> errorMessage( max(logLength, int(1)) );
-	glGetProgramInfoLog(programID, logLength, NULL, &errorMessage[0]);
-	fprintf(stdout, "Linking Check: %s\n", &errorMessage[0]);
-
-	glDeleteShader(vertexID);
-
-	return programID;
-}
-
 
 /*
 * Draw Calls
@@ -231,9 +276,14 @@ void Feedback()
 void LoadMVP()
 {
   //Camera
-  glm::vec3 cameraPosition = glm::vec3(0.0f,0.0f,0.0f); //0,3,3
-  glm::vec3 cameraTarget = glm::vec3(1.0f,0.0f,1.0f); //0,0,0
-  glm:: vec3 upVector = glm::vec3(0.0f,1.0f,0.0f); //0,1,0
+  cameraDirection = glm::vec3(cos(cameraTheta) * sin(cameraPhi),
+                                       sin(cameraTheta),
+                                       cos(cameraTheta) * cos(cameraPhi));
+  glm::vec3 cameraTarget = cameraPosition + cameraDirection; 
+  cameraRight = glm::vec3( sin(cameraPhi - M_PI/2.0f),
+                               0,
+                               cos(cameraPhi - M_PI/2.0f));
+  glm:: vec3 upVector = glm::cross( cameraRight, cameraDirection );
   glm::mat4 CameraMatrix = glm::lookAt(cameraPosition, cameraTarget, upVector);
 
   //Projection
@@ -299,14 +349,19 @@ int main(int argc, char *argv[])
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   
   // Create our window
-  window = glfwCreateWindow(800, 800, "Falling Snow", NULL, NULL);
+  ScreenWidth = 800;
+  ScreenHeight = 800;
+  window = glfwCreateWindow(ScreenWidth, ScreenHeight, "Falling Snow", NULL, NULL);
   if (!window) {
     glfwTerminate();
-    printf("glfw window create failed\n");
+    printf("glfw window creation failed\n");
     exit(EXIT_FAILURE);
   }
   glfwMakeContextCurrent(window);
+  //glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
   glfwSetKeyCallback(window, key_callback);
+  glfwSetMouseButtonCallback(window, MouseButton);
+  glfwSetCursorPosCallback(window, CursorPos);
 
   // Initialize GLEW
   glewExperimental = GL_TRUE;
@@ -346,6 +401,9 @@ int main(int argc, char *argv[])
     * Polls for Mouse & Keyboard Events
     */
     glfwPollEvents();
+
+
+    LoadMVP();
 
     /*
     * Draws scene to screen
