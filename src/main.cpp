@@ -26,6 +26,7 @@ vector<glm::vec4> points;
 GLuint snowProgram, feedbackProgram;
 GLuint vertexLocation;
 GLuint vao, vbo, tbo;
+GLfloat wind = 0.0f;
 
 //====== Camera Settings =======
 glm::vec3 cameraPosition = glm::vec3(0.0f); //initial starting position
@@ -208,6 +209,8 @@ void Render()
   glEnableVertexAttribArray(vertexLocation);
   glVertexAttribPointer(vertexLocation, 4, GL_FLOAT, GL_FALSE, 0, 0);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+  glUniform1f(glGetUniformLocation(snowProgram, "wind"), wind);
 
   glDrawArrays(GL_POINTS, 0, (int)points.size());
 
@@ -409,6 +412,7 @@ int main(int argc, char *argv[])
     * Draws scene to screen
     */
     Render();
+    wind += 0.001;
 
     /*
     * GPU acceleration
