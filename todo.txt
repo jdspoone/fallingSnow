@@ -1,4 +1,5 @@
-Based on what we planned to have done by the end of the weekend, we still need to do the following:
-    -Implement a perspective camera and actually render the points we’re passing to OpenGl
-    -Implement a geometry shader which turns a single point into 2 triangles composing a square
-    -Implement basic particle emission, probably just returning a particle to the top of the domain when it hits the bottom 
+1. Particle emission
+
+2. Perlin noise wind
+
+3. Interesting snowflake geometry
