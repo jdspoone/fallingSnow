@@ -16,29 +16,39 @@ out vec4 middle;
 
 layout(triangle_strip, max_vertices = 3) out;
 
-void main() {
-  float r = 0.001f; //Radius of snowflake
-  middle = outVec[0];
+#define M_PI 3.1415926535897932384626433832795
+
+
+// This function emits an equilateral triangle centered at the given point
+void emitEquilateralTriangle(vec4 pointMVP, vec4 pointM, float radius, float angle) {
 
   mat4 rotationMatrix = mat4(
-    cos(0), -sin(0), 0, 0,
-    sin(0), cos(0), 0, 0,
+    cos(angle), -sin(angle), 0, 0,
+    sin(angle), cos(angle), 0, 0,
     0, 0, 1, 0,
     0, 0, 0, 1
   );
 
-  // Emit an equilateral triangle centered at the given point
-  gl_Position = gl_in[0].gl_Position + (rotationMatrix * vec4(-r / 2.0, -r / 2.0, 0.0, 0.0));
-  position = outVec[0] + vec4(-r / 2.0, -r / 2.0, 0.0, 0.0);
+  gl_Position = pointMVP + (rotationMatrix * vec4(radius * cos(0), radius * sin(0), 0.0, 0.0));
+  position = pointM + (rotationMatrix * vec4(radius * cos(0), radius * sin(0), 0.0, 0.0));
   EmitVertex();
   
-  gl_Position = gl_in[0].gl_Position + (rotationMatrix * vec4(r / 2.0, -r / 2.0, 0.0, 0.0));
-  position = outVec[0] + vec4(r / 2.0, -r / 2.0, 0.0, 0.0);
+  gl_Position = pointMVP + (rotationMatrix * vec4(radius * cos(120 * M_PI / 180), radius * sin(120 * M_PI / 180), 0.0, 0.0));
+  position = pointM + (rotationMatrix * vec4(radius * cos(120 * M_PI / 180), radius * sin(120 * M_PI / 180), 0.0, 0.0));
   EmitVertex();
   
-  gl_Position = gl_in[0].gl_Position + (rotationMatrix * vec4(0.0, r/2, 0.0, 0.0));
-  position = outVec[0] + vec4(0.0, r/2, 0.0, 0.0);
+  gl_Position = pointMVP + (rotationMatrix * vec4(radius * cos(240 * M_PI / 180), radius * sin(240 * M_PI / 180), 0.0, 0.0));
+  position = pointM + (rotationMatrix * vec4(radius * cos(240 * M_PI / 180), radius * sin(240 * M_PI / 180), 0.0, 0.0));
   EmitVertex();
 
   EndPrimitive();
+}
+
+
+void main() {
+  float r = 0.001f; //Radius of snowflake
+  middle = outVec[0];
+  float angle = -M_PI / 2.0;
+
+  emitEquilateralTriangle(gl_in[0].gl_Position, outVec[0], r, angle);
 }
