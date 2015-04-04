@@ -14,7 +14,7 @@ out vec4 middle;
  *        lines or triangles by calling EndPrimitive() after emitting 2 or 3 vertices
  */
 
-layout(triangle_strip, max_vertices = 3) out;
+layout(triangle_strip, max_vertices = 6) out;
 
 #define M_PI 3.1415926535897932384626433832795
 
@@ -45,10 +45,23 @@ void emitEquilateralTriangle(vec4 pointMVP, vec4 pointM, float radius, float ang
 }
 
 
+void kochSnowflake(int level, vec4 pointMVP, vec4 pointM, float radius) {
+
+  switch (level) {
+    case 1:
+      emitEquilateralTriangle(pointMVP, pointM, radius, -M_PI / 2.0);
+      emitEquilateralTriangle(pointMVP, pointM, radius, M_PI / 2.0);
+      break;
+
+    default:
+      emitEquilateralTriangle(pointMVP, pointM, radius, -M_PI / 2.0);
+      break;
+  }
+}
+
 void main() {
   float r = 0.001f; //Radius of snowflake
   middle = outVec[0];
-  float angle = -M_PI / 2.0;
 
-  emitEquilateralTriangle(gl_in[0].gl_Position, outVec[0], r, angle);
+  kochSnowflake(1, gl_in[0].gl_Position, outVec[0], r);
 }
