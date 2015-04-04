@@ -37,6 +37,11 @@ GLfloat cameraTheta, cameraPhi = 0.0f;
 
 bool ScreenLock = false;
 int ScreenWidth, ScreenHeight;
+
+unsigned int particleCount;
+unsigned int particleStep = 5000;
+int maxChangePerFrame = 1000;
+
 GLuint loadShader(GLenum type, const GLchar *path)
 {
   // For logging purposes...
@@ -193,6 +198,10 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
     cameraPosition -= cameraRight * camera_step;
   if (key == GLFW_KEY_D && (action == GLFW_PRESS || action == GLFW_REPEAT))
     cameraPosition += cameraRight * camera_step;
+  if (key == GLFW_KEY_UP && (action == GLFW_PRESS || action == GLFW_REPEAT))
+    particleCount += particleStep;
+  if (key == GLFW_KEY_DOWN && (action == GLFW_PRESS || action == GLFW_REPEAT))
+    particleCount = std::max(particleCount - particleStep, 0u);
 }
 
 /*
@@ -220,24 +229,42 @@ void Render()
   glfwSwapBuffers(window);
 }
 
+/*
+ * Generates a point within a [-1,1] cube and stuffs it in the points array.
+ */
+void GeneratePoint()
+{
+    float x = 1.0f, y = 1.0f, z = 1.0f, velocity;
+    x -= (rand() % 200) / 100.0f;
+    y -= (rand() % 200) / 100.0f;
+    z -= (rand() % 200) / 100.0f;
+    velocity = ((rand() % 10 + 9) / 20000.0f);
+    points.push_back(glm::vec4(x, y, z, velocity));
+}
+
 void LoadPoints()
 {
   //Create Points
   float x,y,z,velocity = 1.0f;
   /* initialize random seed: */
   srand (time(NULL));
- for (float k = -1; k <= 1; k+= 0.03f)
-  for (float i = -1; i <= 1; i+= 0.03f)
-    for (float j = -1; j <= 1; j+= 0.03f)
-    {
+  for (float k = -1; k <= 1; k+= 0.03f)
+    for (float i = -1; i <= 1; i+= 0.03f)
+      for (float j = -1; j <= 1; j+= 0.03f)
+      {
+		// Generate numbers in the range of 0.09 to 0.18, then offset by k/i for
+		// final numbers in the range -0.91 to 1.18
         x = ((rand() % 10 + 9)/100.0f) + k; 
         y = ((rand() % 10 + 9)/100.0f) + i; 
+		// Range is -0.94 to 1.15
         z = ((rand() % 10 + 6)/100.0f) + j;
         velocity = ((rand() % 10 + 9)/20000.0f); 
         points.push_back(glm::vec4(x,y,z,velocity));
-    }
-
-   cout <<"Particle Count: "<<points.size()<<endl;
+      }
+  
+  particleCount = points.size();
+  cout <<"Particle Count: " << particleCount << endl;
+  
   //Attach to buffer and vao
   glBindVertexArray(vao);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
@@ -245,6 +272,33 @@ void LoadPoints()
   glBufferSubData(GL_ARRAY_BUFFER, 0, points.size() * sizeof(glm::vec4), &points[0][0]);
 
   glBindVertexArray(0); 
+}
+
+/*
+ * Checks to see if the particle count is where we want it, and adds/removes particles 
+ * if necessary.
+ */
+void AdjustPoints()
+{
+    int difference = particleCount - points.size();
+    if (difference < 0)
+    {
+        // More points than there should be, get rid of some.
+        for (int i = 0; i > std::max(difference, -maxChangePerFrame) ; i--)
+        {
+            points.pop_back();
+		}
+		cout << "Particle count: " << points.size() << endl;
+    }
+    else if (difference > 0)
+    {
+        // Not enough points, make more.
+        for (int i = 0; i < std::min(difference, maxChangePerFrame); i++)
+        {
+            GeneratePoint();
+		}
+		cout << "Particle count: " << points.size() << endl;
+    }
 }
 
 void Feedback()
@@ -404,9 +458,8 @@ int main(int argc, char *argv[])
     * Polls for Mouse & Keyboard Events
     */
     glfwPollEvents();
-
-
     LoadMVP();
+	AdjustPoints();
 
     /*
     * Draws scene to screen
