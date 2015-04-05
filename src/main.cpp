@@ -21,6 +21,8 @@
 
 using namespace std;
 
+const int MAX_BUFFER_SIZE = 12000000;
+
 GLFWwindow* window = NULL;
 vector<glm::vec4> points;
 GLuint snowProgram, feedbackProgram;
@@ -268,7 +270,7 @@ void LoadPoints()
   //Attach to buffer and vao
   glBindVertexArray(vao);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glBufferData(GL_ARRAY_BUFFER, points.size() * sizeof(glm::vec4), NULL, GL_DYNAMIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, MAX_BUFFER_SIZE, NULL, GL_DYNAMIC_DRAW);
   glBufferSubData(GL_ARRAY_BUFFER, 0, points.size() * sizeof(glm::vec4), &points[0][0]);
 
   glBindVertexArray(0); 
@@ -281,14 +283,20 @@ void LoadPoints()
 void AdjustPoints()
 {
     int difference = particleCount - points.size();
+
+	// Early exit if no changes needed.
+	if (difference == 0) return;
+
+	int previous = points.size();
+
+
     if (difference < 0)
     {
         // More points than there should be, get rid of some.
-        for (int i = 0; i > std::max(difference, -maxChangePerFrame) ; i--)
+        for (int i = 0; i > std::max(difference, -maxChangePerFrame); i--)
         {
             points.pop_back();
 		}
-		cout << "Particle count: " << points.size() << endl;
     }
     else if (difference > 0)
     {
@@ -297,8 +305,16 @@ void AdjustPoints()
         {
             GeneratePoint();
 		}
-		cout << "Particle count: " << points.size() << endl;
-    }
+		// Buffer new data.
+		glBindVertexArray(vao);
+		//glBindBuffer(GL_ARRAY_BUFFER, tbo);
+		//glBufferSubData(GL_ARRAY_BUFFER, previous, difference * sizeof(glm::vec4), &points[previous][0]);
+		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+		glBufferSubData(GL_ARRAY_BUFFER, previous, difference * sizeof(glm::vec4), &points[previous][0]);
+	}
+	cout << "Particle count: " << points.size() << endl;
+
+	glBindVertexArray(0);
 }
 
 void Feedback()
