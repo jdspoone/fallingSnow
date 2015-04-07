@@ -46,6 +46,7 @@ unsigned int particleCount;
 unsigned int particleStep = 5000;
 int maxChangePerFrame = 1000;
 
+
 GLuint loadShader(GLenum type, const GLchar *path)
 {
   // For logging purposes...
@@ -100,6 +101,8 @@ GLuint loadShader(GLenum type, const GLchar *path)
   
   return shader;
 }
+
+
 GLuint loadFeedbackShader(const char *vPath)
 {
 	// Create the shader
@@ -126,6 +129,7 @@ GLuint loadFeedbackShader(const char *vPath)
 
 	return programID;
 }
+
 
 GLuint loadShadersVGF(const char *vPath, const char *gPath, const char *fPath)
 {
@@ -160,6 +164,7 @@ GLuint loadShadersVGF(const char *vPath, const char *gPath, const char *fPath)
 	return programID;
 }
 
+
 GLuint loadShadersVF(const char *vPath, const char *fPath)
 {
 	// Create the shaders
@@ -190,6 +195,7 @@ GLuint loadShadersVF(const char *vPath, const char *fPath)
 	return programID;
 }
 
+
 /*
 * Event handler for mouse clicks
 *
@@ -208,6 +214,7 @@ void MouseButton(GLFWwindow * window, int button, int action, int mods)
     }
 }
 
+
 /*
 * Handler for keeping track of mouse position
 */
@@ -220,6 +227,7 @@ void CursorPos(GLFWwindow * window, double xpos, double ypos)
 	   cameraTheta +=  0.00005 * (ScreenHeight/2.0 - ypos);
 	}
 }
+
 
 // Keyboard callback function.
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -239,6 +247,7 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
   if (key == GLFW_KEY_DOWN && (action == GLFW_PRESS || action == GLFW_REPEAT))
     particleCount = std::max(particleCount - particleStep, 0u);
 }
+
 
 /*
 * Draw Calls
@@ -280,6 +289,7 @@ void Render()
   glfwSwapBuffers(window);
 }
 
+
 /*
  * Generates a point within a [-1,1] cube and stuffs it in the points array.
  */
@@ -292,6 +302,7 @@ void GeneratePoint()
     velocity = ((rand() % 10 + 9) / 20000.0f);
     points.push_back(glm::vec4(x, y, z, velocity));
 }
+
 
 void LoadPoints()
 {
@@ -327,6 +338,7 @@ void LoadPoints()
 
   glBindVertexArray(0); 
 }
+
 
 /*
  * Checks to see if the particle count is where we want it, and adds/removes particles 
@@ -367,6 +379,7 @@ void AdjustPoints()
 	glBindVertexArray(0);
 }
 
+
 void Feedback()
 {
   glEnable(GL_RASTERIZER_DISCARD);
@@ -395,6 +408,7 @@ void Feedback()
   glBindVertexArray(0);
   glUseProgram(0); //Unbind
 }
+
 
 /*
 * Model-View-Projection Transformation Matrix
@@ -551,8 +565,6 @@ void setupRenderingContext()
 
   glEnable(GL_PROGRAM_POINT_SIZE); //Will remove after geometry shader is implemented, maybe
   glEnable(GL_DEPTH_TEST);
-
-
 }
 
 
