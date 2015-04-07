@@ -25,6 +25,8 @@ using namespace std;
 const int MAX_BUFFER_SIZE = 12000000;
 
 GLFWwindow* window = NULL;
+GLuint Frames = 0;
+double Timer = glfwGetTime();
 vector<glm::vec4> points;
 GLuint snowProgram, feedbackProgram, backdropProgram, floorProgram;
 GLuint vertexLocation;
@@ -773,6 +775,25 @@ void setupRenderingContext()
   glEnable(GL_DEPTH_TEST);
 }
 
+/*
+* Sets window title to FPS
+*/
+void FPS()
+{
+	double elapsed = glfwGetTime() - Timer;
+	if (elapsed > 1.0)
+	{
+		char title[32];
+		sprintf(title,"Falling Snow, FPS: %0.2f",Frames/elapsed);
+		glfwSetWindowTitle(window,title);
+		Timer = glfwGetTime();
+		Frames = 0;
+	}
+    else
+    {
+        Frames++;
+    }
+}
 
 int main(int argc, char *argv[])
 {
@@ -836,6 +857,9 @@ int main(int argc, char *argv[])
 
   while(!glfwWindowShouldClose(window))
   {
+    //Update FPS
+    FPS();
+   // getchar();
     /*
     * Polls for Mouse & Keyboard Events
     */
