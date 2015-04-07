@@ -307,10 +307,8 @@ void AdjustPoints()
 		}
 		// Buffer new data.
 		glBindVertexArray(vao);
-		//glBindBuffer(GL_ARRAY_BUFFER, tbo);
-		//glBufferSubData(GL_ARRAY_BUFFER, previous, difference * sizeof(glm::vec4), &points[previous][0]);
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		glBufferSubData(GL_ARRAY_BUFFER, previous, difference * sizeof(glm::vec4), &points[previous][0]);
+		glBufferSubData(GL_ARRAY_BUFFER, previous * sizeof(glm::vec4), std::min(difference, maxChangePerFrame) * sizeof(glm::vec4), &points[previous][0]);
 	}
 	cout << "Particle count: " << points.size() << endl;
 
