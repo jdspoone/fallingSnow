@@ -14,6 +14,7 @@
 #include <vector>
 #include <algorithm>
 #include <time.h>
+#include "lodepng.h" //Credit: http://lodev.org/lodepng/
 
 #ifdef _WIN32
 #define M_PI 3.14159265358979323846f
@@ -25,9 +26,10 @@ const int MAX_BUFFER_SIZE = 12000000;
 
 GLFWwindow* window = NULL;
 vector<glm::vec4> points;
-GLuint snowProgram, feedbackProgram;
+GLuint snowProgram, feedbackProgram, backdropProgram;
 GLuint vertexLocation;
-GLuint vao, vbo, tbo;
+GLuint vao, vbo, tbo, plane_vao, plane_vbo;
+GLuint backTID;
 GLfloat wind = 0.0f;
 
 //====== Camera Settings =======
@@ -93,7 +95,8 @@ GLuint loadShader(GLenum type, const GLchar *path)
 	glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &logLength);
 	std::vector<char> shaderErrorMessage(logLength);
 	glGetShaderInfoLog(shader, logLength, NULL, &shaderErrorMessage[0]);
-	fprintf(stdout, "Checking %s shader: %s\n", typeName, &shaderErrorMessage[0]);
+	if ( logLength > 0)
+        fprintf(stdout, "Checking %s shader: %s\n", typeName, &shaderErrorMessage[0]);
   
   return shader;
 }
@@ -103,7 +106,7 @@ GLuint loadFeedbackShader(const char *vPath)
 	GLuint vertexID = loadShader(GL_VERTEX_SHADER, vPath);
 
 	// Link the program
-	fprintf(stdout, "Linking feedback program\n");
+	fprintf(stdout, "Linking feedback program\n\n");
 	GLuint programID = glCreateProgram();
 	glAttachShader(programID, vertexID);
 	glLinkProgram(programID);
@@ -116,14 +119,15 @@ GLuint loadFeedbackShader(const char *vPath)
 	glGetProgramiv(programID, GL_INFO_LOG_LENGTH, &logLength);
 	std::vector<char> errorMessage( max(logLength, int(1)) );
 	glGetProgramInfoLog(programID, logLength, NULL, &errorMessage[0]);
-	fprintf(stdout, "Linking Check: %s\n", &errorMessage[0]);
+	if ( logLength > 0)
+	    fprintf(stdout, "Linking Check: %s\n", &errorMessage[0]);
 
 	glDeleteShader(vertexID);
 
 	return programID;
 }
 
-GLuint loadSnowShaders(const char *vPath, const char *gPath, const char *fPath)
+GLuint loadShadersVGF(const char *vPath, const char *gPath, const char *fPath)
 {
 	// Create the shaders
 	GLuint vertexID = loadShader(GL_VERTEX_SHADER, vPath);
@@ -131,7 +135,7 @@ GLuint loadSnowShaders(const char *vPath, const char *gPath, const char *fPath)
 	GLuint fragmentID = loadShader(GL_FRAGMENT_SHADER, fPath);
 
 	// Link the program
-	fprintf(stdout, "Linking snow program\n");
+	fprintf(stdout, "Linking Vertex-Geomentry-Fragment program\n\n");
 	GLuint programID = glCreateProgram();
 	glAttachShader(programID, vertexID);
 	glAttachShader(programID, geometryID);
@@ -146,7 +150,8 @@ GLuint loadSnowShaders(const char *vPath, const char *gPath, const char *fPath)
 	glGetProgramiv(programID, GL_INFO_LOG_LENGTH, &logLength);
 	std::vector<char> errorMessage( max(logLength, int(1)) );
 	glGetProgramInfoLog(programID, logLength, NULL, &errorMessage[0]);
-	fprintf(stdout, "Linking Check: %s\n", &errorMessage[0]);
+	if ( logLength > 0 )
+	    fprintf(stdout, "Linking Check: %s\n", &errorMessage[0]);
 
 	glDeleteShader(vertexID);
 	glDeleteShader(geometryID);
@@ -155,6 +160,35 @@ GLuint loadSnowShaders(const char *vPath, const char *gPath, const char *fPath)
 	return programID;
 }
 
+GLuint loadShadersVF(const char *vPath, const char *fPath)
+{
+	// Create the shaders
+	GLuint vertexID = loadShader(GL_VERTEX_SHADER, vPath);
+	GLuint fragmentID = loadShader(GL_FRAGMENT_SHADER, fPath);
+
+	// Link the program
+	fprintf(stdout, "Linking Vertex-Fragment program\n\n");
+	GLuint programID = glCreateProgram();
+	glAttachShader(programID, vertexID);
+	glAttachShader(programID, fragmentID);
+	glLinkProgram(programID);
+
+	GLint result = GL_FALSE;
+	int logLength;
+
+	// Check the program
+	glGetProgramiv(programID, GL_LINK_STATUS, &result);
+	glGetProgramiv(programID, GL_INFO_LOG_LENGTH, &logLength);
+	std::vector<char> errorMessage( max(logLength, int(1)) );
+	glGetProgramInfoLog(programID, logLength, NULL, &errorMessage[0]);
+	if ( logLength > 0 )
+	    fprintf(stdout, "Linking Check: %s\n", &errorMessage[0]);
+
+	glDeleteShader(vertexID);
+	glDeleteShader(fragmentID);
+
+	return programID;
+}
 
 /*
 * Event handler for mouse clicks
@@ -214,15 +248,30 @@ void Render()
   glClearColor(0.6f,0.6f,0.6f,0.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+  //Draw Backdrop  
+  glUseProgram(backdropProgram);
+
+  glBindVertexArray(plane_vao);
+  glBindBuffer(GL_ARRAY_BUFFER, plane_vbo); 
+  
+  glEnableVertexAttribArray(0); //vertices location
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 5, 0);
+  glEnableVertexAttribArray(1); //texture coords location
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 5, (void*)(sizeof(GL_FLOAT)*3));
+  
+  GLuint texUnitLoc = glGetUniformLocation(backdropProgram, "texUnit"); 
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, backTID); 
+  glUniform1i(backdropProgram, texUnitLoc);
+
+  glDrawArrays(GL_TRIANGLES, 0, 6);
+
+  //Draw Snow
   glUseProgram(snowProgram);
 
   glBindVertexArray(vao);
-  glEnableVertexAttribArray(vertexLocation);
-  glVertexAttribPointer(vertexLocation, 4, GL_FLOAT, GL_FALSE, 0, 0);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-
   glUniform1f(glGetUniformLocation(snowProgram, "wind"), wind);
-
   glDrawArrays(GL_POINTS, 0, (int)points.size());
 
   glBindVertexArray(0);
@@ -273,6 +322,9 @@ void LoadPoints()
   glBufferData(GL_ARRAY_BUFFER, MAX_BUFFER_SIZE, NULL, GL_DYNAMIC_DRAW);
   glBufferSubData(GL_ARRAY_BUFFER, 0, points.size() * sizeof(glm::vec4), &points[0][0]);
 
+  glEnableVertexAttribArray(vertexLocation);
+  glVertexAttribPointer(vertexLocation, 4, GL_FLOAT, GL_FALSE, 0, 0);
+
   glBindVertexArray(0); 
 }
 
@@ -309,6 +361,7 @@ void AdjustPoints()
 		glBindVertexArray(vao);
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
 		glBufferSubData(GL_ARRAY_BUFFER, previous * sizeof(glm::vec4), std::min(difference, maxChangePerFrame) * sizeof(glm::vec4), &points[previous][0]);
+
 	}
 	cout << "Particle count: " << points.size() << endl;
 
@@ -336,6 +389,9 @@ void Feedback()
   std::swap(vbo, tbo);
 	  
   glDisable(GL_RASTERIZER_DISCARD);
+
+  glEnableVertexAttribArray(vertexLocation);
+  glVertexAttribPointer(vertexLocation, 4, GL_FLOAT, GL_FALSE, 0, 0);
   
   glBindVertexArray(0);
   glUseProgram(0); //Unbind
@@ -351,9 +407,12 @@ void LoadMVP()
                                        sin(cameraTheta),
                                        cos(cameraTheta) * cos(cameraPhi));
   glm::vec3 cameraTarget = cameraPosition + cameraDirection; 
+  //cout<<"Camera Target: "<<cameraTarget.x<<","<<cameraTarget.y<<","<<cameraTarget.z<<endl; 
+ 
   cameraRight = glm::vec3( sin(cameraPhi - M_PI/2.0f),
-                               0,
-                               cos(cameraPhi - M_PI/2.0f));
+                           0,
+                           cos(cameraPhi - M_PI/2.0f));
+
   glm:: vec3 upVector = glm::cross( cameraRight, cameraDirection );
   glm::mat4 CameraMatrix = glm::lookAt(cameraPosition, cameraTarget, upVector);
 
@@ -375,16 +434,60 @@ void LoadMVP()
   glUseProgram(snowProgram); //bind
   GLuint MatrixID = glGetUniformLocation(snowProgram, "MVP");
   glUniformMatrix4fv(MatrixID,  1, GL_FALSE, &MVP[0][0]);
+  
+  glUseProgram(backdropProgram); //bind
+  MatrixID = glGetUniformLocation(backdropProgram, "MVP");
+  glUniformMatrix4fv(MatrixID,  1, GL_FALSE, &MVP[0][0]);
   glUseProgram(0); //unbind
    
 }
 
 
+/*
+* Loads a PNG from file, and adds info to texture
+*/
+void LoadTexture(const char* filename, GLuint textureID, GLuint shaderID)
+{
+	/*
+	* Load Image
+	*/
+	vector<unsigned char> image; //the raw pixels
+  	unsigned width, height;
+
+  	//decode
+  	unsigned error = lodepng::decode(image, width, height, filename);
+	cout<< filename <<" >> height: "<<height<<", width: "<<width<<endl;
+
+  	//if there's an error, display it
+  	if(error) cout << "decoder error " << error << ": " 
+		<< lodepng_error_text(error) << endl;
+	
+	//Bind
+	glBindTexture(GL_TEXTURE_2D, textureID);
+
+	//Load image into texture
+	glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, &image[0]);
+
+	//For sampling
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+}
+
+
 void setupRenderingContext()
 {
-  snowProgram = loadSnowShaders("vertexShader.glsl", "geometryShader.glsl", "fragmentShader.glsl");
+  //Load vertex, geomtry, and fragment shaders for snow
+  snowProgram = loadShadersVGF("Shaders/Snow/vertex.glsl", "Shaders/Snow/geometry.glsl", "Shaders/Snow/fragment.glsl");
 
-  feedbackProgram = loadFeedbackShader("feedbackShader.glsl");
+  //Load vertex, and fragment shaders for plane textures
+  backdropProgram = loadShadersVF("Shaders/Backdrop/vertex.glsl", "Shaders/Backdrop/fragment.glsl");
+  glGenTextures(1, &backTID); //load back texture ID
+
+  //Load vertex shader to preform feedback transformations on
+  feedbackProgram = loadFeedbackShader("Shaders/Feedback/vertex.glsl");
   const GLchar* feedbackVaryings[] = { "outVec" };
   glTransformFeedbackVaryings(feedbackProgram, 1, feedbackVaryings, GL_INTERLEAVED_ATTRIBS);
   glLinkProgram(feedbackProgram);
@@ -401,8 +504,56 @@ void setupRenderingContext()
   // Create TBO
   glGenBuffers(1, &tbo); //Attatched to VAO in Feedback()
 
+  //Create VAO for planes (backdrops)
+  glGenVertexArrays(1, &plane_vao);
+  glBindVertexArray(plane_vao);
+
+  glEnableVertexAttribArray(0); //vertices location
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 5, 0);
+  glEnableVertexAttribArray(1); //texture coords location
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 5, (void*)(sizeof(GL_FLOAT)*3));
+
+  //Testing a single plane for now
+  // Setup Plane VBO
+  glGenBuffers(1, &plane_vbo);
+  glBindBuffer(GL_ARRAY_BUFFER, plane_vbo); 
+  //Draw plane
+   GLfloat vertexPlaneData[] = {   //Triangle A
+                                   -0.1f, 0.1f, 1.0f, //v0
+                                    0.0f, 0.0f,       //uv0
+ 
+                                   -0.1f, -0.1f, 1.0f,//v1
+                                    0.0f, 1.0f,       //uv1
+
+                                    0.1f, 0.1f, 1.0f, //v2
+                                    1.0f, 0.0f,       //uv2
+
+                                    //Triangle B
+                                    0.1f, 0.1f, 1.0f, //v3
+                                    1.0f, 0.0f,       //uv3
+
+                                   -0.1f, -0.1f, 1.0f,//v4
+                                    0.0f, 1.0f,       //uv4
+
+                                    0.1f, -0.1f, 1.0f,//v5
+                                    1.0f, 1.0f        //uv6
+													  			};
+  glBufferData(GL_ARRAY_BUFFER,sizeof(GLfloat)*30 , &vertexPlaneData[0], GL_STATIC_DRAW);
+  //glBindBuffer(GL_ARRAY_BUFFER, 0); //unbind 
+
+  //Load Texture for plane
+  glGenTextures(1, &backTID);
+  glBindTexture(GL_TEXTURE_2D, backTID);
+  LoadTexture("Textures/cowcube.png", backdropProgram, backTID); //Credit: Etienne!
+
+
+
+  glBindVertexArray(0);
+
   glEnable(GL_PROGRAM_POINT_SIZE); //Will remove after geometry shader is implemented, maybe
   glEnable(GL_DEPTH_TEST);
+
+
 }
 
 
