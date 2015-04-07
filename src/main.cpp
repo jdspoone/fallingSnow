@@ -298,7 +298,7 @@ void LoadPoints()
   //Create Points
   float x,y,z,velocity = 1.0f;
   /* initialize random seed: */
-  srand (time(NULL));
+  srand ((unsigned int)time(NULL));
   for (float k = -1; k <= 1; k+= 0.03f)
     for (float i = -1; i <= 1; i+= 0.03f)
       for (float j = -1; j <= 1; j+= 0.03f)
@@ -313,7 +313,7 @@ void LoadPoints()
         points.push_back(glm::vec4(x,y,z,velocity));
       }
   
-  particleCount = points.size();
+  particleCount = (unsigned int)points.size();
   cout <<"Particle Count: " << particleCount << endl;
   
   //Attach to buffer and vao
@@ -334,13 +334,12 @@ void LoadPoints()
  */
 void AdjustPoints()
 {
-    int difference = particleCount - points.size();
+  int difference = particleCount - (int)points.size();
 
 	// Early exit if no changes needed.
 	if (difference == 0) return;
 
-	int previous = points.size();
-
+	int previous = (int)points.size();
 
     if (difference < 0)
     {
