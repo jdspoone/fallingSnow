@@ -27,12 +27,11 @@ const int MAX_BUFFER_SIZE = 12000000;
 GLFWwindow* window = NULL;
 GLuint Frames = 0;
 double Timer = glfwGetTime();
-vector<glm::vec4> points;
+vector<glm::vec3> points;
 GLuint snowProgram, feedbackProgram, backdropProgram, floorProgram;
 GLuint vertexLocation;
 GLuint vao, vbo, tbo, plane_vao, back_vbo, floor_vbo;
 GLuint backTID, floorTID;
-GLfloat wind = 0.0f;
 
 //====== Camera Settings =======
 glm::vec3 cameraPosition = glm::vec3(0.0f); //initial starting position
@@ -305,7 +304,6 @@ void Render()
 
   glBindVertexArray(vao);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glUniform1f(glGetUniformLocation(snowProgram, "wind"), wind);
   glDrawArrays(GL_POINTS, 0, (int)points.size());
 
   glBindVertexArray(0);
@@ -324,8 +322,7 @@ void GeneratePoint()
     x -= (rand() % 200) / 100.0f;
     y -= (rand() % 200) / 100.0f;
     z -= (rand() % 200) / 100.0f;
-    velocity = ((rand() % 10 + 9) / 20000.0f);
-    points.push_back(glm::vec4(x, y, z, velocity));
+    points.push_back(glm::vec3(x, y, z));
 }
 
 
@@ -345,8 +342,7 @@ void LoadPoints()
         y = ((rand() % 10 + 9)/100.0f) + i; 
 		// Range is -0.94 to 1.15
         z = ((rand() % 10 + 6)/100.0f) + j;
-        velocity = ((rand() % 10 + 9)/20000.0f); 
-        points.push_back(glm::vec4(x,y,z,velocity));
+        points.push_back(glm::vec3(x,y,z));
       }
   
   particleCount = (unsigned int)points.size();
@@ -356,10 +352,10 @@ void LoadPoints()
   glBindVertexArray(vao);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
   glBufferData(GL_ARRAY_BUFFER, MAX_BUFFER_SIZE, NULL, GL_DYNAMIC_DRAW);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, points.size() * sizeof(glm::vec4), &points[0][0]);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, points.size() * sizeof(glm::vec3), &points[0][0]);
 
   glEnableVertexAttribArray(vertexLocation);
-  glVertexAttribPointer(vertexLocation, 4, GL_FLOAT, GL_FALSE, 0, 0);
+  glVertexAttribPointer(vertexLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
   glBindVertexArray(0); 
 }
@@ -414,7 +410,7 @@ void Feedback()
 
   // Re-bind our output buffer
   glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, tbo);
-  glBufferData(GL_ARRAY_BUFFER, points.size() * sizeof(glm::vec4), NULL, GL_DYNAMIC_READ);
+  glBufferData(GL_ARRAY_BUFFER, points.size() * sizeof(glm::vec3), NULL, GL_DYNAMIC_READ);
       
   // Perform the feedback transform
   glBeginTransformFeedback(GL_POINTS);
@@ -428,7 +424,7 @@ void Feedback()
   glDisable(GL_RASTERIZER_DISCARD);
 
   glEnableVertexAttribArray(vertexLocation);
-  glVertexAttribPointer(vertexLocation, 4, GL_FLOAT, GL_FALSE, 0, 0);
+  glVertexAttribPointer(vertexLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
   
   glBindVertexArray(0);
   glUseProgram(0); //Unbind
@@ -871,7 +867,6 @@ int main(int argc, char *argv[])
     * Draws scene to screen
     */
     Render();
-    wind += 0.001;
 
     /*
     * GPU acceleration
