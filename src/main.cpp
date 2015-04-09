@@ -676,7 +676,7 @@ void setupRenderingContext()
 
   //Load vertex shader to preform feedback transformations on
   feedbackProgram = loadFeedbackShader("Shaders/Feedback/vertex.glsl");
-  const GLchar* feedbackVaryings[] = { "outVec" };
+  const GLchar* feedbackVaryings[] = { "nextPosition" };
   glTransformFeedbackVaryings(feedbackProgram, 1, feedbackVaryings, GL_INTERLEAVED_ATTRIBS);
   glLinkProgram(feedbackProgram);
 

@@ -1,13 +1,15 @@
 #version 410 core
 
-in vec3 inVec;
+in vec3 previousPosition;
 
-out vec3 outVec;
+out vec3 nextPosition;
 
 void main() {
-    outVec = vec3(inVec.x, inVec.y - 0.0005, inVec.z);
-    if (outVec.y < -1) {
-      outVec.y = 1.00;
-    }
+
+  nextPosition = vec3(previousPosition.x, previousPosition.y - 0.0005, previousPosition.z);
+
+  if (nextPosition.y < -1) {
+    nextPosition.y = 1.00;
+  }
 }
 
