@@ -453,7 +453,7 @@ void LoadMVP()
   //Projection
   float fovy = M_PI * 0.25f; //Radians,this is equivalent to 45 degrees
   float aspect = 1.0f;
-  float zNear = 0.1f;
+  float zNear = 0.0001f;
   float zFar = 100.0f;
   glm::mat4 ProjectionMatrix = glm::perspective(fovy, aspect, zNear, zFar);
 
