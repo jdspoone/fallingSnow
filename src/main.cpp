@@ -28,8 +28,11 @@ GLFWwindow* window = NULL;
 GLuint Frames = 0;
 double Timer = glfwGetTime();
 vector<glm::vec3> positions;
+vector<glm::vec3> velocities;
+vector<GLfloat> rotationAngles;
 GLuint snowProgram, feedbackProgram, backdropProgram, floorProgram;
 GLuint particlePosition, particleVelocity, particleRotation;
+GLuint feedbackPosition, feedbackVelocity, feedbackRotation;
 GLuint vao, vbo, tbo, plane_vao, back_vbo, floor_vbo;
 GLuint backTID, floorTID;
 
@@ -347,14 +350,22 @@ void LoadPoints()
   particleCount = (unsigned int)positions.size();
   cout <<"Particle Count: " << particleCount << endl;
   
+  // Create our initial per-particle velocities
+  for (unsigned int i = 0; i < particleCount; ++i) {
+    velocities.push_back(glm::vec3(0.0, -0.0001, 0.0));
+  }
+  
   //Attach to buffer and vao
   glBindVertexArray(vao);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
   glBufferData(GL_ARRAY_BUFFER, MAX_BUFFER_SIZE, NULL, GL_DYNAMIC_DRAW);
   glBufferSubData(GL_ARRAY_BUFFER, 0, positions.size() * sizeof(glm::vec3), &positions[0][0]);
+  glBufferSubData(GL_ARRAY_BUFFER, positions.size() * sizeof(glm::vec3), velocities.size() * sizeof(glm::vec3), &velocities[0][0]);
 
   glEnableVertexAttribArray(particlePosition);
-  glVertexAttribPointer(particlePosition, 3, GL_FLOAT, GL_FALSE, 0, 0);
+  glVertexAttribPointer(particlePosition, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
+  glEnableVertexAttribArray(particleVelocity);
+  glVertexAttribPointer(particleVelocity, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)(positions.size() * sizeof(glm::vec3)));
 
   glBindVertexArray(0); 
 }
@@ -409,8 +420,10 @@ void Feedback()
 
   // Re-bind our output buffer
   glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, tbo);
-  glBufferData(GL_ARRAY_BUFFER, positions.size() * sizeof(glm::vec3), NULL, GL_DYNAMIC_READ);
-      
+  glBufferData(GL_ARRAY_BUFFER, MAX_BUFFER_SIZE, NULL, GL_DYNAMIC_READ);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, positions.size() * sizeof(glm::vec3), &positions[0][0]);
+  glBufferSubData(GL_ARRAY_BUFFER, positions.size() * sizeof(glm::vec3), velocities.size() * sizeof(glm::vec3), &velocities[0][0]);
+
   // Perform the feedback transform
   glBeginTransformFeedback(GL_POINTS);
   glDrawArrays(GL_POINTS, 0, (int)positions.size());
@@ -422,8 +435,10 @@ void Feedback()
 	  
   glDisable(GL_RASTERIZER_DISCARD);
 
-  glEnableVertexAttribArray(particlePosition);
-  glVertexAttribPointer(particlePosition, 3, GL_FLOAT, GL_FALSE, 0, 0);
+  glEnableVertexAttribArray(feedbackPosition);
+  glVertexAttribPointer(feedbackPosition, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
+  glEnableVertexAttribArray(feedbackVelocity);
+  glVertexAttribPointer(feedbackVelocity, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)(positions.size() * sizeof(glm::vec3)));
   
   glBindVertexArray(0);
   glUseProgram(0); //Unbind
@@ -675,12 +690,20 @@ void setupRenderingContext()
 
   //Load vertex shader to preform feedback transformations on
   feedbackProgram = loadFeedbackShader("Shaders/Feedback/vertex.glsl");
-  const GLchar* feedbackVaryings[] = { "nextPosition" };
+  const GLchar* feedbackVaryings[] = { "nextPosition", "nextVelocity" };
   glTransformFeedbackVaryings(feedbackProgram, 1, feedbackVaryings, GL_INTERLEAVED_ATTRIBS);
   glLinkProgram(feedbackProgram);
 
   //Where to pass in vertices to the shaders
-  particlePosition = glGetAttribLocation(snowProgram, "inVec");
+  particlePosition = glGetAttribLocation(snowProgram, "position");
+  particleVelocity = glGetAttribLocation(snowProgram, "velocity");
+  particleRotation = glGetAttribLocation(snowProgram, "rotation");
+
+  feedbackPosition = glGetAttribLocation(feedbackProgram, "position");
+  feedbackVelocity = glGetAttribLocation(feedbackProgram, "velocity");
+  feedbackRotation = glGetAttribLocation(feedbackProgram, "rotation");
+
+
 
   // Create VAO
   glGenVertexArrays(1, &vao);
