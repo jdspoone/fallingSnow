@@ -25,16 +25,12 @@ using namespace std;
 const int MAX_BUFFER_SIZE = 12000000;
 
 GLFWwindow* window = NULL;
-GLuint Frames = 0;
-double Timer = glfwGetTime();
-vector<glm::vec3> positions;
-vector<glm::vec3> velocities;
-vector<GLfloat> rotationAngles;
+vector<glm::vec4> points;
 GLuint snowProgram, feedbackProgram, backdropProgram, floorProgram;
-GLuint particlePosition, particleVelocity, particleRotation;
-GLuint feedbackPosition, feedbackVelocity, feedbackRotation;
+GLuint vertexLocation;
 GLuint vao, vbo, tbo, plane_vao, back_vbo, floor_vbo;
 GLuint backTID, floorTID;
+GLfloat wind = 0.0f;
 
 //====== Camera Settings =======
 glm::vec3 cameraPosition = glm::vec3(0.0f); //initial starting position
@@ -307,7 +303,8 @@ void Render()
 
   glBindVertexArray(vao);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glDrawArrays(GL_POINTS, 0, (int)positions.size());
+  glUniform1f(glGetUniformLocation(snowProgram, "wind"), wind);
+  glDrawArrays(GL_POINTS, 0, (int)points.size());
 
   glBindVertexArray(0);
   glUseProgram(0);
@@ -321,51 +318,46 @@ void Render()
  */
 void GeneratePoint()
 {
-    float x = 1.0f, y = 1.0f, z = 1.0f;
+    float x = 1.0f, y = 1.0f, z = 1.0f, velocity;
     x -= (rand() % 200) / 100.0f;
     y -= (rand() % 200) / 100.0f;
     z -= (rand() % 200) / 100.0f;
-    positions.push_back(glm::vec3(x, y, z));
+    velocity = ((rand() % 10 + 9) / 20000.0f);
+    points.push_back(glm::vec4(x, y, z, velocity));
 }
 
 
 void LoadPoints()
 {
   //Create Points
-  float x,y,z = 1.0f;
+  float x,y,z,velocity = 1.0f;
   /* initialize random seed: */
   srand ((unsigned int)time(NULL));
   for (float k = -1; k <= 1; k+= 0.03f)
     for (float i = -1; i <= 1; i+= 0.03f)
-      for (float j = -1; j <= 1; j+= 0.03f) {
-        // Generate numbers in the range of 0.09 to 0.18, then offset by k/i for
-        // final numbers in the range -0.91 to 1.18
+      for (float j = -1; j <= 1; j+= 0.03f)
+      {
+		// Generate numbers in the range of 0.09 to 0.18, then offset by k/i for
+		// final numbers in the range -0.91 to 1.18
         x = ((rand() % 10 + 9)/100.0f) + k; 
         y = ((rand() % 10 + 9)/100.0f) + i; 
-        // Range is -0.94 to 1.15
+		// Range is -0.94 to 1.15
         z = ((rand() % 10 + 6)/100.0f) + j;
-        positions.push_back(glm::vec3(x,y,z));
+        velocity = ((rand() % 10 + 9)/20000.0f); 
+        points.push_back(glm::vec4(x,y,z,velocity));
       }
   
-  particleCount = (unsigned int)positions.size();
+  particleCount = (unsigned int)points.size();
   cout <<"Particle Count: " << particleCount << endl;
-  
-  // Create our initial per-particle velocities
-  for (unsigned int i = 0; i < particleCount; ++i) {
-    velocities.push_back(glm::vec3(0.0, -0.0001, 0.0));
-  }
   
   //Attach to buffer and vao
   glBindVertexArray(vao);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
   glBufferData(GL_ARRAY_BUFFER, MAX_BUFFER_SIZE, NULL, GL_DYNAMIC_DRAW);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, positions.size() * sizeof(glm::vec3), &positions[0][0]);
-  glBufferSubData(GL_ARRAY_BUFFER, positions.size() * sizeof(glm::vec3), velocities.size() * sizeof(glm::vec3), &velocities[0][0]);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, points.size() * sizeof(glm::vec4), &points[0][0]);
 
-  glEnableVertexAttribArray(particlePosition);
-  glVertexAttribPointer(particlePosition, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
-  glEnableVertexAttribArray(particleVelocity);
-  glVertexAttribPointer(particleVelocity, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)(positions.size() * sizeof(glm::vec3)));
+  glEnableVertexAttribArray(vertexLocation);
+  glVertexAttribPointer(vertexLocation, 4, GL_FLOAT, GL_FALSE, 0, 0);
 
   glBindVertexArray(0); 
 }
@@ -377,19 +369,19 @@ void LoadPoints()
  */
 void AdjustPoints()
 {
-  int difference = particleCount - (int)positions.size();
+  int difference = particleCount - (int)points.size();
 
 	// Early exit if no changes needed.
 	if (difference == 0) return;
 
-	int previous = (int)positions.size();
+	int previous = (int)points.size();
 
     if (difference < 0)
     {
         // More points than there should be, get rid of some.
         for (int i = 0; i > std::max(difference, -maxChangePerFrame); i--)
         {
-            positions.pop_back();
+            points.pop_back();
 		}
     }
     else if (difference > 0)
@@ -402,10 +394,10 @@ void AdjustPoints()
 		// Buffer new data.
 		glBindVertexArray(vao);
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		glBufferSubData(GL_ARRAY_BUFFER, previous * sizeof(glm::vec4), std::min(difference, maxChangePerFrame) * sizeof(glm::vec4), &positions[previous][0]);
+		glBufferSubData(GL_ARRAY_BUFFER, previous * sizeof(glm::vec4), std::min(difference, maxChangePerFrame) * sizeof(glm::vec4), &points[previous][0]);
 
 	}
-	cout << "Particle count: " << positions.size() << endl;
+	cout << "Particle count: " << points.size() << endl;
 
 	glBindVertexArray(0);
 }
@@ -420,13 +412,11 @@ void Feedback()
 
   // Re-bind our output buffer
   glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, tbo);
-  glBufferData(GL_ARRAY_BUFFER, MAX_BUFFER_SIZE, NULL, GL_DYNAMIC_READ);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, positions.size() * sizeof(glm::vec3), &positions[0][0]);
-  glBufferSubData(GL_ARRAY_BUFFER, positions.size() * sizeof(glm::vec3), velocities.size() * sizeof(glm::vec3), &velocities[0][0]);
-
+  glBufferData(GL_ARRAY_BUFFER, points.size() * sizeof(glm::vec4), NULL, GL_DYNAMIC_READ);
+      
   // Perform the feedback transform
   glBeginTransformFeedback(GL_POINTS);
-  glDrawArrays(GL_POINTS, 0, (int)positions.size());
+  glDrawArrays(GL_POINTS, 0, (int)points.size());
   glEndTransformFeedback();
   glFlush();
 			
@@ -435,10 +425,8 @@ void Feedback()
 	  
   glDisable(GL_RASTERIZER_DISCARD);
 
-  glEnableVertexAttribArray(feedbackPosition);
-  glVertexAttribPointer(feedbackPosition, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
-  glEnableVertexAttribArray(feedbackVelocity);
-  glVertexAttribPointer(feedbackVelocity, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)(positions.size() * sizeof(glm::vec3)));
+  glEnableVertexAttribArray(vertexLocation);
+  glVertexAttribPointer(vertexLocation, 4, GL_FLOAT, GL_FALSE, 0, 0);
   
   glBindVertexArray(0);
   glUseProgram(0); //Unbind
@@ -467,7 +455,7 @@ void LoadMVP()
   //Projection
   float fovy = M_PI * 0.25f; //Radians,this is equivalent to 45 degrees
   float aspect = 1.0f;
-  float zNear = 0.0001f;
+  float zNear = 0.1f;
   float zFar = 100.0f;
   glm::mat4 ProjectionMatrix = glm::perspective(fovy, aspect, zNear, zFar);
 
@@ -690,20 +678,12 @@ void setupRenderingContext()
 
   //Load vertex shader to preform feedback transformations on
   feedbackProgram = loadFeedbackShader("Shaders/Feedback/vertex.glsl");
-  const GLchar* feedbackVaryings[] = { "nextPosition", "nextVelocity" };
+  const GLchar* feedbackVaryings[] = { "outVec" };
   glTransformFeedbackVaryings(feedbackProgram, 1, feedbackVaryings, GL_INTERLEAVED_ATTRIBS);
   glLinkProgram(feedbackProgram);
 
   //Where to pass in vertices to the shaders
-  particlePosition = glGetAttribLocation(snowProgram, "position");
-  particleVelocity = glGetAttribLocation(snowProgram, "velocity");
-  particleRotation = glGetAttribLocation(snowProgram, "rotation");
-
-  feedbackPosition = glGetAttribLocation(feedbackProgram, "position");
-  feedbackVelocity = glGetAttribLocation(feedbackProgram, "velocity");
-  feedbackRotation = glGetAttribLocation(feedbackProgram, "rotation");
-
-
+  vertexLocation = glGetAttribLocation(snowProgram, "inVec");
 
   // Create VAO
   glGenVertexArrays(1, &vao);
@@ -793,25 +773,6 @@ void setupRenderingContext()
   glEnable(GL_DEPTH_TEST);
 }
 
-/*
-* Sets window title to FPS
-*/
-void FPS()
-{
-	double elapsed = glfwGetTime() - Timer;
-	if (elapsed > 1.0)
-	{
-		char title[32];
-		sprintf(title,"Falling Snow, FPS: %0.2f",Frames/elapsed);
-		glfwSetWindowTitle(window,title);
-		Timer = glfwGetTime();
-		Frames = 0;
-	}
-    else
-    {
-        Frames++;
-    }
-}
 
 int main(int argc, char *argv[])
 {
@@ -875,9 +836,6 @@ int main(int argc, char *argv[])
 
   while(!glfwWindowShouldClose(window))
   {
-    //Update FPS
-    FPS();
-   // getchar();
     /*
     * Polls for Mouse & Keyboard Events
     */
@@ -889,6 +847,7 @@ int main(int argc, char *argv[])
     * Draws scene to screen
     */
     Render();
+    wind += 0.001;
 
     /*
     * GPU acceleration

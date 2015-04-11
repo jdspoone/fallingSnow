@@ -1,17 +1,15 @@
 #version 410 core
 
-in vec3 position;
-in vec3 velocity;
+in vec4 inVec;
 
-out vec3 nextPosition;
-out vec3 nextVelocity;
+uniform mat4 MVP;
+
+out vec4 outVec;
 
 void main() {
-
-  nextPosition = position + velocity;
-
-  if (nextPosition.y < -1) {
-    nextPosition.y = 1.00;
-  }
+    outVec = vec4(inVec.x, inVec.y - inVec.w, inVec.z, inVec.w);
+    if (outVec.y < -1) {
+      outVec.y = 1.00;
+    }
 }
 
