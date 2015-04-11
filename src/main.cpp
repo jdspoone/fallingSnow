@@ -27,9 +27,9 @@ const int MAX_BUFFER_SIZE = 12000000;
 GLFWwindow* window = NULL;
 GLuint Frames = 0;
 double Timer = glfwGetTime();
-vector<glm::vec3> points;
+vector<glm::vec3> positions;
 GLuint snowProgram, feedbackProgram, backdropProgram, floorProgram;
-GLuint vertexLocation;
+GLuint particlePosition, particleVelocity, particleRotation;
 GLuint vao, vbo, tbo, plane_vao, back_vbo, floor_vbo;
 GLuint backTID, floorTID;
 
@@ -304,7 +304,7 @@ void Render()
 
   glBindVertexArray(vao);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glDrawArrays(GL_POINTS, 0, (int)points.size());
+  glDrawArrays(GL_POINTS, 0, (int)positions.size());
 
   glBindVertexArray(0);
   glUseProgram(0);
@@ -318,44 +318,43 @@ void Render()
  */
 void GeneratePoint()
 {
-    float x = 1.0f, y = 1.0f, z = 1.0f, velocity;
+    float x = 1.0f, y = 1.0f, z = 1.0f;
     x -= (rand() % 200) / 100.0f;
     y -= (rand() % 200) / 100.0f;
     z -= (rand() % 200) / 100.0f;
-    points.push_back(glm::vec3(x, y, z));
+    positions.push_back(glm::vec3(x, y, z));
 }
 
 
 void LoadPoints()
 {
   //Create Points
-  float x,y,z,velocity = 1.0f;
+  float x,y,z = 1.0f;
   /* initialize random seed: */
   srand ((unsigned int)time(NULL));
   for (float k = -1; k <= 1; k+= 0.03f)
     for (float i = -1; i <= 1; i+= 0.03f)
-      for (float j = -1; j <= 1; j+= 0.03f)
-      {
-		// Generate numbers in the range of 0.09 to 0.18, then offset by k/i for
-		// final numbers in the range -0.91 to 1.18
+      for (float j = -1; j <= 1; j+= 0.03f) {
+        // Generate numbers in the range of 0.09 to 0.18, then offset by k/i for
+        // final numbers in the range -0.91 to 1.18
         x = ((rand() % 10 + 9)/100.0f) + k; 
         y = ((rand() % 10 + 9)/100.0f) + i; 
-		// Range is -0.94 to 1.15
+        // Range is -0.94 to 1.15
         z = ((rand() % 10 + 6)/100.0f) + j;
-        points.push_back(glm::vec3(x,y,z));
+        positions.push_back(glm::vec3(x,y,z));
       }
   
-  particleCount = (unsigned int)points.size();
+  particleCount = (unsigned int)positions.size();
   cout <<"Particle Count: " << particleCount << endl;
   
   //Attach to buffer and vao
   glBindVertexArray(vao);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
   glBufferData(GL_ARRAY_BUFFER, MAX_BUFFER_SIZE, NULL, GL_DYNAMIC_DRAW);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, points.size() * sizeof(glm::vec3), &points[0][0]);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, positions.size() * sizeof(glm::vec3), &positions[0][0]);
 
-  glEnableVertexAttribArray(vertexLocation);
-  glVertexAttribPointer(vertexLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
+  glEnableVertexAttribArray(particlePosition);
+  glVertexAttribPointer(particlePosition, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
   glBindVertexArray(0); 
 }
@@ -367,19 +366,19 @@ void LoadPoints()
  */
 void AdjustPoints()
 {
-  int difference = particleCount - (int)points.size();
+  int difference = particleCount - (int)positions.size();
 
 	// Early exit if no changes needed.
 	if (difference == 0) return;
 
-	int previous = (int)points.size();
+	int previous = (int)positions.size();
 
     if (difference < 0)
     {
         // More points than there should be, get rid of some.
         for (int i = 0; i > std::max(difference, -maxChangePerFrame); i--)
         {
-            points.pop_back();
+            positions.pop_back();
 		}
     }
     else if (difference > 0)
@@ -392,10 +391,10 @@ void AdjustPoints()
 		// Buffer new data.
 		glBindVertexArray(vao);
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		glBufferSubData(GL_ARRAY_BUFFER, previous * sizeof(glm::vec4), std::min(difference, maxChangePerFrame) * sizeof(glm::vec4), &points[previous][0]);
+		glBufferSubData(GL_ARRAY_BUFFER, previous * sizeof(glm::vec4), std::min(difference, maxChangePerFrame) * sizeof(glm::vec4), &positions[previous][0]);
 
 	}
-	cout << "Particle count: " << points.size() << endl;
+	cout << "Particle count: " << positions.size() << endl;
 
 	glBindVertexArray(0);
 }
@@ -410,11 +409,11 @@ void Feedback()
 
   // Re-bind our output buffer
   glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, tbo);
-  glBufferData(GL_ARRAY_BUFFER, points.size() * sizeof(glm::vec3), NULL, GL_DYNAMIC_READ);
+  glBufferData(GL_ARRAY_BUFFER, positions.size() * sizeof(glm::vec3), NULL, GL_DYNAMIC_READ);
       
   // Perform the feedback transform
   glBeginTransformFeedback(GL_POINTS);
-  glDrawArrays(GL_POINTS, 0, (int)points.size());
+  glDrawArrays(GL_POINTS, 0, (int)positions.size());
   glEndTransformFeedback();
   glFlush();
 			
@@ -423,8 +422,8 @@ void Feedback()
 	  
   glDisable(GL_RASTERIZER_DISCARD);
 
-  glEnableVertexAttribArray(vertexLocation);
-  glVertexAttribPointer(vertexLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
+  glEnableVertexAttribArray(particlePosition);
+  glVertexAttribPointer(particlePosition, 3, GL_FLOAT, GL_FALSE, 0, 0);
   
   glBindVertexArray(0);
   glUseProgram(0); //Unbind
@@ -681,7 +680,7 @@ void setupRenderingContext()
   glLinkProgram(feedbackProgram);
 
   //Where to pass in vertices to the shaders
-  vertexLocation = glGetAttribLocation(snowProgram, "inVec");
+  particlePosition = glGetAttribLocation(snowProgram, "inVec");
 
   // Create VAO
   glGenVertexArrays(1, &vao);
