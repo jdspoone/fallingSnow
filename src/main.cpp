@@ -269,11 +269,11 @@ void LoadPoints()
   
   // Create our initial per-particle velocities
   for (unsigned int i = 0; i < particleCount; ++i) {
-    velocities.push_back(glm::vec3(0.0, -0.0001, 0.0));
+
   }
 
   // Allocate and initialize the vertex buffers
-  for (int i = 0; i < 3; ++i) {
+  for (int i = 0; i < 2; ++i) {
     glBindBuffer(GL_ARRAY_BUFFER, snowVBO[i]);
     glBufferData(GL_ARRAY_BUFFER, MAX_BUFFER_SIZE, NULL, GL_DYNAMIC_DRAW);
     glBufferSubData(GL_ARRAY_BUFFER, 0, positions.size() * sizeof(glm::vec3), &positions[0][0]);
