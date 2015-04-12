@@ -283,11 +283,7 @@ void LoadPoints()
 }
 
 
-void Render()
-{
-  glClearColor(0.6f,0.6f,0.6f,0.0f);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+void RenderSnow() {
   // Bind the shader program
   glUseProgram(snowProgram);
 
@@ -315,6 +311,15 @@ void Render()
   
   // Unbind the shader program
   glUseProgram(0);
+}
+
+
+void Render()
+{
+  glClearColor(0.6f,0.6f,0.6f,0.0f);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  RenderSnow();
   
   glfwSwapBuffers(window);
 }
