@@ -286,15 +286,56 @@ void LoadPoints()
   }
 }
 
+//Camera
+glm::mat4 getMVP()
+{
+  //Camera
+  cameraDirection = glm::vec3(cos(cameraTheta) * sin(cameraPhi),
+                                       sin(cameraTheta),
+                                       cos(cameraTheta) * cos(cameraPhi));
+  glm::vec3 cameraTarget = cameraPosition + cameraDirection; 
+  //cout<<"Camera Target: "<<cameraTarget.x<<","<<cameraTarget.y<<","<<cameraTarget.z<<endl; 
+ 
+  cameraRight = glm::vec3( sin(cameraPhi - M_PI/2.0f),
+                           0,
+                           cos(cameraPhi - M_PI/2.0f));
+
+  glm:: vec3 upVector = glm::cross( cameraRight, cameraDirection );
+  glm::mat4 CameraMatrix = glm::lookAt(cameraPosition, cameraTarget, upVector);
+
+  //Projection
+  float fovy = M_PI * 0.25f; //Radians,this is equivalent to 45 degrees
+  float aspect = 1.0f;
+  float zNear = 0.0001f;
+  float zFar = 100.0f;
+  glm::mat4 ProjectionMatrix = glm::perspective(fovy, aspect, zNear, zFar);
+
+  //Model
+  //nothing to do here yet
+  glm::mat4 ModelMatrix = glm::mat4(1.0f);  //Identity Matrix
+
+  //MVP
+  glm::mat4 MVP = ProjectionMatrix * CameraMatrix * ModelMatrix;
+
+  return MVP;
+   
+}
 
 void Render()
 {
   glClearColor(0.6f,0.6f,0.6f,0.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+  //Get current Camera Transformation
+  glm::mat4 MVP = getMVP();
+
   // Bind the shader program
   glUseProgram(snowProgram);
 
+  // Update MVP
+  GLuint MatrixID = glGetUniformLocation(snowProgram, "MVP");
+  glUniformMatrix4fv(MatrixID,  1, GL_FALSE, &MVP[0][0]);
+  
   // Bind the VAO
   glBindVertexArray(snowVAO);
   
@@ -370,53 +411,6 @@ void Feedback()
   glDisable(GL_RASTERIZER_DISCARD);
 }
 
-
-void LoadMVP()
-{
-  //Camera
-  cameraDirection = glm::vec3(cos(cameraTheta) * sin(cameraPhi),
-                                       sin(cameraTheta),
-                                       cos(cameraTheta) * cos(cameraPhi));
-  glm::vec3 cameraTarget = cameraPosition + cameraDirection; 
-  //cout<<"Camera Target: "<<cameraTarget.x<<","<<cameraTarget.y<<","<<cameraTarget.z<<endl; 
- 
-  cameraRight = glm::vec3( sin(cameraPhi - M_PI/2.0f),
-                           0,
-                           cos(cameraPhi - M_PI/2.0f));
-
-  glm:: vec3 upVector = glm::cross( cameraRight, cameraDirection );
-  glm::mat4 CameraMatrix = glm::lookAt(cameraPosition, cameraTarget, upVector);
-
-  //Projection
-  float fovy = M_PI * 0.25f; //Radians,this is equivalent to 45 degrees
-  float aspect = 1.0f;
-  float zNear = 0.0001f;
-  float zFar = 100.0f;
-  glm::mat4 ProjectionMatrix = glm::perspective(fovy, aspect, zNear, zFar);
-
-  //Model
-  //nothing to do here yet
-  glm::mat4 ModelMatrix = glm::mat4(1.0f);  //Identity Matrix
-
-  //MVP
-  glm::mat4 MVP = ProjectionMatrix * CameraMatrix * ModelMatrix;
-
-  //Pass through to shaders
-  glUseProgram(snowProgram); //bind
-  GLuint MatrixID = glGetUniformLocation(snowProgram, "MVP");
-  glUniformMatrix4fv(MatrixID,  1, GL_FALSE, &MVP[0][0]);
-  
-  glUseProgram(backdropProgram); //bind
-  MatrixID = glGetUniformLocation(backdropProgram, "MVP");
-  glUniformMatrix4fv(MatrixID,  1, GL_FALSE, &MVP[0][0]);
-  
-  glUseProgram(floorProgram); //bind
-  MatrixID = glGetUniformLocation(floorProgram, "MVP");
-  glUniformMatrix4fv(MatrixID,  1, GL_FALSE, &MVP[0][0]);
-  
-  glUseProgram(0); //unbind
-   
-}
 
 
 // Loads a PNG from file, and adds info to texture
@@ -557,7 +551,6 @@ int main(int argc, char *argv[])
   }
   
   setupRenderingContext();
-  LoadMVP();
   LoadPoints();
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -565,7 +558,6 @@ int main(int argc, char *argv[])
   while(!glfwWindowShouldClose(window)) {
     FPS();
     glfwPollEvents();
-    LoadMVP();
     Render();
     Feedback();
 
