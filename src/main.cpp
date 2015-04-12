@@ -367,7 +367,7 @@ void Feedback()
 }
 
 
-void LoadMVP()
+void GetMVP()
 {
   //Camera
   cameraDirection = glm::vec3(cos(cameraTheta) * sin(cameraPhi),
@@ -553,7 +553,7 @@ int main(int argc, char *argv[])
   }
   
   setupRenderingContext();
-  LoadMVP();
+  GetMVP();
   LoadPoints();
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -561,7 +561,7 @@ int main(int argc, char *argv[])
   while(!glfwWindowShouldClose(window)) {
     FPS();
     glfwPollEvents();
-    LoadMVP();
+    GetMVP();
     Render();
     Feedback();
   }
