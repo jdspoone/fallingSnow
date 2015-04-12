@@ -269,7 +269,7 @@ void LoadPoints()
   
   // Create our initial per-particle velocities
   for (unsigned int i = 0; i < particleCount; ++i) {
-
+    velocities.push_back(glm::vec3(0.0, -0.0001, 0.0));
   }
 
   // Allocate and initialize the vertex buffers
