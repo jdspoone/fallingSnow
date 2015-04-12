@@ -86,12 +86,11 @@ GLuint loadShader(GLenum type, const GLchar *path)
 	if(shaderStream.is_open()) {
     std::string Line = "";
     while(getline(shaderStream, Line))
-        shaderCode += "\n" + Line;
+      shaderCode += "\n" + Line;
     shaderStream.close();
 	}
-	else {
+	else
 		printf("Could not open %s shader file: %s\n", typeName, path);
-	}
   
 	GLint result = GL_FALSE;
 	int logLength;
@@ -107,8 +106,8 @@ GLuint loadShader(GLenum type, const GLchar *path)
 	glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &logLength);
 	std::vector<char> shaderErrorMessage(logLength);
 	glGetShaderInfoLog(shader, logLength, NULL, &shaderErrorMessage[0]);
-	if ( logLength > 0)
-        fprintf(stdout, "Checking %s shader: %s\n", typeName, &shaderErrorMessage[0]);
+	if (logLength > 0)
+    fprintf(stdout, "Checking %s shader: %s\n", typeName, &shaderErrorMessage[0]);
   
   return shader;
 }
@@ -131,10 +130,10 @@ GLuint loadFeedbackShader(const char *vPath)
 	// Check the program
 	glGetProgramiv(programID, GL_LINK_STATUS, &result);
 	glGetProgramiv(programID, GL_INFO_LOG_LENGTH, &logLength);
-	std::vector<char> errorMessage( max(logLength, int(1)) );
+	std::vector<char> errorMessage(max(logLength, int(1)));
 	glGetProgramInfoLog(programID, logLength, NULL, &errorMessage[0]);
-	if ( logLength > 0)
-	    fprintf(stdout, "Linking Check: %s\n", &errorMessage[0]);
+	if (logLength > 0)
+    fprintf(stdout, "Linking Check: %s\n", &errorMessage[0]);
 
 	glDeleteShader(vertexID);
 
@@ -163,9 +162,9 @@ GLuint loadShadersVGF(const char *vPath, const char *gPath, const char *fPath)
 	// Check the program
 	glGetProgramiv(programID, GL_LINK_STATUS, &result);
 	glGetProgramiv(programID, GL_INFO_LOG_LENGTH, &logLength);
-	std::vector<char> errorMessage( max(logLength, int(1)) );
+	std::vector<char> errorMessage(max(logLength, int(1)));
 	glGetProgramInfoLog(programID, logLength, NULL, &errorMessage[0]);
-	if ( logLength > 0 )
+	if (logLength > 0)
 	    fprintf(stdout, "Linking Check: %s\n", &errorMessage[0]);
 
 	glDeleteShader(vertexID);
@@ -195,10 +194,10 @@ GLuint loadShadersVF(const char *vPath, const char *fPath)
 	// Check the program
 	glGetProgramiv(programID, GL_LINK_STATUS, &result);
 	glGetProgramiv(programID, GL_INFO_LOG_LENGTH, &logLength);
-	std::vector<char> errorMessage( max(logLength, int(1)) );
+	std::vector<char> errorMessage(max(logLength, int(1)));
 	glGetProgramInfoLog(programID, logLength, NULL, &errorMessage[0]);
-	if ( logLength > 0 )
-	    fprintf(stdout, "Linking Check: %s\n", &errorMessage[0]);
+	if (logLength > 0)
+    fprintf(stdout, "Linking Check: %s\n", &errorMessage[0]);
 
 	glDeleteShader(vertexID);
 	glDeleteShader(fragmentID);
@@ -263,15 +262,12 @@ void LoadPoints()
         // Range is -0.94 to 1.15
         z = ((rand() % 10 + 6)/100.0f) + j;
         positions.push_back(glm::vec3(x,y,z));
+        velocities.push_back(glm::vec3(0.0, -0.0001, 0.0));
       }
   
   particleCount = (unsigned int)positions.size();
   cout <<"Particle Count: " << particleCount << endl;
   
-  // Create our initial per-particle velocities
-  for (unsigned int i = 0; i < particleCount; ++i) {
-    velocities.push_back(glm::vec3(0.0, -0.0001, 0.0));
-  }
 
   // Allocate and initialize the position vertex buffer
   for (int i = 0; i < 2; ++i) {
@@ -279,7 +275,7 @@ void LoadPoints()
     glBufferData(GL_ARRAY_BUFFER, positions.size() * sizeof(glm::vec3), &positions[0][0], GL_DYNAMIC_DRAW);
   }
   
-  // Allocate and initialize the position vertex buffer
+  // Allocate and initialize the velocity vertex buffer
   for (int i = 0; i < 2; ++i) {
     glBindBuffer(GL_ARRAY_BUFFER, velocityVBO[i]);
     glBufferData(GL_ARRAY_BUFFER, velocities.size() * sizeof(glm::vec3), &velocities[0][0], GL_DYNAMIC_DRAW);
@@ -380,11 +376,11 @@ void LoadMVP()
   glm::vec3 cameraTarget = cameraPosition + cameraDirection; 
   //cout<<"Camera Target: "<<cameraTarget.x<<","<<cameraTarget.y<<","<<cameraTarget.z<<endl; 
  
-  cameraRight = glm::vec3( sin(cameraPhi - M_PI/2.0f),
+  cameraRight = glm::vec3(sin(cameraPhi - M_PI/2.0f),
                            0,
                            cos(cameraPhi - M_PI/2.0f));
 
-  glm:: vec3 upVector = glm::cross( cameraRight, cameraDirection );
+  glm:: vec3 upVector = glm::cross(cameraRight, cameraDirection);
   glm::mat4 CameraMatrix = glm::lookAt(cameraPosition, cameraTarget, upVector);
 
   //Projection
@@ -568,7 +564,6 @@ int main(int argc, char *argv[])
     LoadMVP();
     Render();
     Feedback();
-
   }
 
   //Cleanup 
