@@ -33,8 +33,10 @@ vector<GLfloat> rotationAngles;
 GLuint snowProgram, feedbackProgram, backdropProgram, floorProgram;
 GLuint particlePosition, particleVelocity, particleRotation;
 GLuint feedbackPosition, feedbackVelocity, feedbackRotation;
-GLuint vao, vbo, tbo, plane_vao, back_vbo, floor_vbo;
+GLuint vao[2], vbo[2], plane_vao, back_vbo, floor_vbo;
 GLuint backTID, floorTID;
+
+unsigned int iteration = 0;
 
 //====== Camera Settings =======
 glm::vec3 cameraPosition = glm::vec3(0.0f); //initial starting position
@@ -305,8 +307,7 @@ void Render()
   //Draw Snow
   glUseProgram(snowProgram);
 
-  glBindVertexArray(vao);
-  glBindBuffer(GL_ARRAY_BUFFER, vbo);
+  glBindVertexArray(vao[iteration % 2]);
   glDrawArrays(GL_POINTS, 0, (int)positions.size());
 
   glBindVertexArray(0);
@@ -354,20 +355,42 @@ void LoadPoints()
   for (unsigned int i = 0; i < particleCount; ++i) {
     velocities.push_back(glm::vec3(0.0, -0.0001, 0.0));
   }
-  
-  //Attach to buffer and vao
-  glBindVertexArray(vao);
-  glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+  // Allocate and initialize the vertex buffers
+  glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
   glBufferData(GL_ARRAY_BUFFER, MAX_BUFFER_SIZE, NULL, GL_DYNAMIC_DRAW);
   glBufferSubData(GL_ARRAY_BUFFER, 0, positions.size() * sizeof(glm::vec3), &positions[0][0]);
   glBufferSubData(GL_ARRAY_BUFFER, positions.size() * sizeof(glm::vec3), velocities.size() * sizeof(glm::vec3), &velocities[0][0]);
 
+  glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+  glBufferData(GL_ARRAY_BUFFER, MAX_BUFFER_SIZE, NULL, GL_DYNAMIC_DRAW);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, positions.size() * sizeof(glm::vec3), &positions[0][0]);
+  glBufferSubData(GL_ARRAY_BUFFER, positions.size() * sizeof(glm::vec3), velocities.size() * sizeof(glm::vec3), &velocities[0][0]);
+
+  // Configure bindings in ours vertex array objects
+  glBindVertexArray(vao[0]);
+  glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
   glEnableVertexAttribArray(particlePosition);
   glVertexAttribPointer(particlePosition, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
   glEnableVertexAttribArray(particleVelocity);
   glVertexAttribPointer(particleVelocity, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)(positions.size() * sizeof(glm::vec3)));
-
-  glBindVertexArray(0); 
+  glEnableVertexAttribArray(feedbackPosition);
+  glVertexAttribPointer(feedbackPosition, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
+  glEnableVertexAttribArray(feedbackVelocity);
+  glVertexAttribPointer(feedbackVelocity, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)(positions.size() * sizeof(glm::vec3)));
+  glBindVertexArray(0);
+  
+  glBindVertexArray(vao[1]);
+  glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+  glEnableVertexAttribArray(particlePosition);
+  glVertexAttribPointer(particlePosition, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
+  glEnableVertexAttribArray(particleVelocity);
+  glVertexAttribPointer(particleVelocity, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)(positions.size() * sizeof(glm::vec3)));
+  glEnableVertexAttribArray(feedbackPosition);
+  glVertexAttribPointer(feedbackPosition, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
+  glEnableVertexAttribArray(feedbackVelocity);
+  glVertexAttribPointer(feedbackVelocity, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)(positions.size() * sizeof(glm::vec3)));
+  glBindVertexArray(0);
 }
 
 
@@ -400,8 +423,7 @@ void AdjustPoints()
             GeneratePoint();
 		}
 		// Buffer new data.
-		glBindVertexArray(vao);
-		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+		glBindVertexArray(vao[iteration % 2]);
 		glBufferSubData(GL_ARRAY_BUFFER, previous * sizeof(glm::vec4), std::min(difference, maxChangePerFrame) * sizeof(glm::vec4), &positions[previous][0]);
 
 	}
@@ -414,15 +436,12 @@ void AdjustPoints()
 void Feedback()
 {
   glEnable(GL_RASTERIZER_DISCARD);
+
   glUseProgram(feedbackProgram); //Bind
-  glBindVertexArray(vao);
-  glBindBuffer(GL_ARRAY_BUFFER, tbo);
+  glBindVertexArray(vao[iteration % 2]);
 
   // Re-bind our output buffer
-  glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, tbo);
-  glBufferData(GL_ARRAY_BUFFER, MAX_BUFFER_SIZE, NULL, GL_DYNAMIC_READ);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, positions.size() * sizeof(glm::vec3), &positions[0][0]);
-  glBufferSubData(GL_ARRAY_BUFFER, positions.size() * sizeof(glm::vec3), velocities.size() * sizeof(glm::vec3), &velocities[0][0]);
+  glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, vbo[(iteration + 1) % 2]);
 
   // Perform the feedback transform
   glBeginTransformFeedback(GL_POINTS);
@@ -431,14 +450,10 @@ void Feedback()
   glFlush();
 			
   // Swap the 2 buffers
-  std::swap(vbo, tbo);
+  std::swap(vbo[0], vbo[1]);
 	  
   glDisable(GL_RASTERIZER_DISCARD);
 
-  glEnableVertexAttribArray(feedbackPosition);
-  glVertexAttribPointer(feedbackPosition, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
-  glEnableVertexAttribArray(feedbackVelocity);
-  glVertexAttribPointer(feedbackVelocity, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)(positions.size() * sizeof(glm::vec3)));
   
   glBindVertexArray(0);
   glUseProgram(0); //Unbind
@@ -703,16 +718,13 @@ void setupRenderingContext()
   feedbackVelocity = glGetAttribLocation(feedbackProgram, "velocity");
   feedbackRotation = glGetAttribLocation(feedbackProgram, "rotation");
 
+  // Generate our vertex array objects
+  glGenVertexArrays(1, &vao[0]);
+  glGenVertexArrays(1, &vao[1]);
 
-
-  // Create VAO
-  glGenVertexArrays(1, &vao);
-
-  // Create VBO
-  glGenBuffers(1, &vbo); //Attatched to VAO in LoadPoints(), and Render()
-
-  // Create TBO
-  glGenBuffers(1, &tbo); //Attatched to VAO in Feedback()
+  // Generate our vertex buffer objects
+  glGenBuffers(1, &vbo[0]);
+  glGenBuffers(1, &vbo[1]);
 
   //Create VAO for planes (backdrops)
   glGenVertexArrays(1, &plane_vao);
@@ -788,8 +800,7 @@ void setupRenderingContext()
   
   
   glBindVertexArray(0);
-
-  glEnable(GL_PROGRAM_POINT_SIZE); //Will remove after geometry shader is implemented, maybe
+  
   glEnable(GL_DEPTH_TEST);
 }
 
@@ -901,9 +912,10 @@ int main(int argc, char *argv[])
   }
 
   //Cleanup 
-  glDeleteBuffers(1, &vbo);
-  glDeleteBuffers(1, &tbo);
-  glDeleteVertexArrays(1, &vao);
+  glDeleteBuffers(1, &vbo[0]);
+  glDeleteBuffers(1, &vbo[1]);
+  glDeleteVertexArrays(1, &vao[0]);
+  glDeleteVertexArrays(1, &vao[1]);
   glDeleteProgram(snowProgram);
   glDeleteProgram(backdropProgram);
   glDeleteProgram(floorProgram);
