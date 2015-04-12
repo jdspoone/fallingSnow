@@ -279,15 +279,6 @@ void LoadPoints()
     glBufferSubData(GL_ARRAY_BUFFER, 0, positions.size() * sizeof(glm::vec3), &positions[0][0]);
     glBufferSubData(GL_ARRAY_BUFFER, positions.size() * sizeof(glm::vec3), velocities.size() * sizeof(glm::vec3), &velocities[0][0]);
   }
-
-  // Set up the attribute bindings for our VAO
-  glBindVertexArray(snowVAO);
-  glBindBuffer(GL_ARRAY_BUFFER, snowVBO[0]);
-  glEnableVertexAttribArray(renderPosition);
-  glVertexAttribPointer(renderPosition, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
-  glEnableVertexAttribArray(renderVelocity);
-  glVertexAttribPointer(renderVelocity, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)(positions.size() * sizeof(glm::vec3)));
-  glBindVertexArray(0);
 }
 
 
@@ -302,19 +293,20 @@ void Render()
   // Bind the VAO
   glBindVertexArray(snowVAO);
   
+  // Establish the necessary attribute bindings for rendering
+  glBindBuffer(GL_ARRAY_BUFFER, snowVBO[iteration % 2]);
+  glEnableVertexAttribArray(renderPosition);
+  glVertexAttribPointer(renderPosition, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
+  glEnableVertexAttribArray(renderVelocity);
+  glVertexAttribPointer(renderVelocity, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)(positions.size() * sizeof(glm::vec3)));
+  
   // Render snowflakes to screen
   glDrawArrays(GL_POINTS, 0, (int)positions.size());
 
   // Disable the attributes used for rendering
   glDisableVertexAttribArray(renderPosition);
   glDisableVertexAttribArray(renderVelocity);
-  
-  // Enable the attributes used for transform feedback
-  glEnableVertexAttribArray(feedbackPosition);
-  glVertexAttribPointer(feedbackPosition, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
-  glEnableVertexAttribArray(feedbackVelocity);
-  glVertexAttribPointer(feedbackVelocity, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)(positions.size() * sizeof(glm::vec3)));
-  
+
   // Unbind the VAO
   glBindVertexArray(0);
   
@@ -335,6 +327,13 @@ void Feedback()
   // Bind the VAO
   glBindVertexArray(snowVAO);
 
+  // Establish the necessary attribute bindings for transform feedback
+  glBindBuffer(GL_ARRAY_BUFFER, snowVBO[iteration % 2]);
+  glEnableVertexAttribArray(feedbackPosition);
+  glVertexAttribPointer(feedbackPosition, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
+  glEnableVertexAttribArray(feedbackVelocity);
+  glVertexAttribPointer(feedbackVelocity, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)(positions.size() * sizeof(glm::vec3)));
+
   // Re-bind our output VBO
   glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, snowVBO[(iteration + 1) % 2]);
 
@@ -350,16 +349,7 @@ void Feedback()
   // Disable the attributes used in transform feedback
   glDisableVertexAttribArray(feedbackPosition);
   glDisableVertexAttribArray(feedbackVelocity);
-  
-  // Re-bind our input VBO
-  glBindBuffer(GL_ARRAY_BUFFER, snowVBO[iteration % 2]);
-  
-  // Enable the attributes used in rendering to screen
-  glEnableVertexAttribArray(renderPosition);
-  glVertexAttribPointer(renderPosition, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
-  glEnableVertexAttribArray(renderVelocity);
-  glVertexAttribPointer(renderVelocity, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)(positions.size() * sizeof(glm::vec3)));
-  
+
   // Unbind the VAO
   glBindVertexArray(0);
   
