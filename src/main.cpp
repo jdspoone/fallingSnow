@@ -33,7 +33,7 @@ vector<GLfloat> rotationAngles;
 GLuint snowProgram, feedbackProgram, backdropProgram, floorProgram;
 GLuint renderPosition, renderVelocity, renderRotation;
 GLuint feedbackPosition, feedbackVelocity, feedbackRotation;
-GLuint vao, vbo[2], plane_vao, back_vbo, floor_vbo;
+GLuint vao, vbo[2];
 GLuint backTID, floorTID;
 
 unsigned int iteration = 0;
@@ -205,33 +205,24 @@ GLuint loadShadersVF(const char *vPath, const char *fPath)
 }
 
 
-/*
-* Event handler for mouse clicks
-*
-* When a mouse button is being held down, it enables ScreenLock
-*/
+// Event handler for mouse clicks
 void MouseButton(GLFWwindow * window, int button, int action, int mods)
 {
-	if (action == GLFW_PRESS)
-	{
+	if (action == GLFW_PRESS) {
 		ScreenLock = true;
-    }
-	if (action == GLFW_RELEASE)
-    {
+  }
+	if (action == GLFW_RELEASE) {
 		ScreenLock = false;
-        glfwSetCursorPos(window, ScreenWidth/2.0, ScreenHeight/2.0);
-    }
+    glfwSetCursorPos(window, ScreenWidth/2.0, ScreenHeight/2.0);
+  }
 }
 
 
-/*
-* Handler for keeping track of mouse position
-*/
+// Handler for keeping track of mouse position
 void CursorPos(GLFWwindow * window, double xpos, double ypos)
 {
 	//Check if holding down mouse button
-	if (ScreenLock)
-	{
+	if (ScreenLock) {
 	   cameraPhi   +=  0.00005 * (ScreenWidth/2.0 - xpos);
 	   cameraTheta +=  0.00005 * (ScreenHeight/2.0 - ypos);
 	}
@@ -296,9 +287,7 @@ void Render()
 }
 
 
-/*
- * Generates a point within a [-1,1] cube and stuffs it in the points array.
- */
+// Generates a point within a [-1,1] cube and stuffs it in the points array.
 void GeneratePoint()
 {
     float x = 1.0f, y = 1.0f, z = 1.0f;
@@ -399,9 +388,6 @@ void Feedback()
 }
 
 
-/*
-* Model-View-Projection Transformation Matrix
-*/
 void LoadMVP()
 {
   //Camera
@@ -450,9 +436,7 @@ void LoadMVP()
 }
 
 
-/*
-* Loads a PNG from file, and adds info to texture
-*/
+// Loads a PNG from file, and adds info to texture
 void LoadTexture(const char* filename, GLuint textureID, GLuint shaderID)
 {
 	/*
@@ -563,7 +547,6 @@ int main(int argc, char *argv[])
     exit(EXIT_FAILURE);
   }
   glfwMakeContextCurrent(window);
-  //glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
   glfwSetKeyCallback(window, key_callback);
   glfwSetMouseButtonCallback(window, MouseButton);
   glfwSetCursorPosCallback(window, CursorPos);
@@ -582,8 +565,7 @@ int main(int argc, char *argv[])
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-  while(!glfwWindowShouldClose(window))
-  {
+  while(!glfwWindowShouldClose(window)) {
     FPS();
     glfwPollEvents();
     LoadMVP();
