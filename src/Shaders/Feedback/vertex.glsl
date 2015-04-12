@@ -4,6 +4,7 @@ in vec3 previousPosition;
 in vec3 previousVelocity;
 
 out vec3 nextPosition;
+out vec3 nextVelocity;
 
 void main() {
 
@@ -12,5 +13,7 @@ void main() {
   if (nextPosition.y < -1) {
     nextPosition.y = 1.00;
   }
+  
+  nextVelocity = previousVelocity;
 }
 

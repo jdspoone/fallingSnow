@@ -22,8 +22,6 @@
 
 using namespace std;
 
-const int MAX_BUFFER_SIZE = 12000000;
-
 GLFWwindow* window = NULL;
 GLuint Frames = 0;
 double Timer = glfwGetTime();
@@ -33,7 +31,9 @@ vector<GLfloat> rotationAngles;
 GLuint snowProgram, feedbackProgram, backdropProgram, floorProgram;
 GLuint renderPosition, renderVelocity, renderRotation;
 GLuint feedbackPosition, feedbackVelocity, feedbackRotation;
-GLuint snowVAO, snowVBO[2];
+GLuint snowVAO;
+GLuint positionVBO[2];
+GLuint velocityVBO[2];
 GLuint backTID, floorTID;
 
 unsigned int iteration = 0;
@@ -223,8 +223,8 @@ void setupRenderingContext()
 
   //Load vertex shader to preform feedback transformations on
   feedbackProgram = loadFeedbackShader("Shaders/Feedback/vertex.glsl");
-  const GLchar* feedbackVaryings[] = { "nextPosition" };
-  glTransformFeedbackVaryings(feedbackProgram, 1, feedbackVaryings, GL_INTERLEAVED_ATTRIBS);
+  const GLchar* feedbackVaryings[] = { "nextPosition", "nextVelocity" };
+  glTransformFeedbackVaryings(feedbackProgram, 2, feedbackVaryings, GL_SEPARATE_ATTRIBS);
   glLinkProgram(feedbackProgram);
 
   // Attribute bindings
@@ -240,7 +240,8 @@ void setupRenderingContext()
   glGenVertexArrays(1, &snowVAO);
 
   // Generate our vertex buffer objects
-  glGenBuffers(2, snowVBO);
+  glGenBuffers(2, positionVBO);
+  glGenBuffers(2, velocityVBO);
   
   glEnable(GL_DEPTH_TEST);
 }
@@ -272,12 +273,16 @@ void LoadPoints()
     velocities.push_back(glm::vec3(0.0, -0.0001, 0.0));
   }
 
-  // Allocate and initialize the vertex buffers
+  // Allocate and initialize the position vertex buffer
   for (int i = 0; i < 2; ++i) {
-    glBindBuffer(GL_ARRAY_BUFFER, snowVBO[i]);
-    glBufferData(GL_ARRAY_BUFFER, MAX_BUFFER_SIZE, NULL, GL_DYNAMIC_DRAW);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, positions.size() * sizeof(glm::vec3), &positions[0][0]);
-    glBufferSubData(GL_ARRAY_BUFFER, positions.size() * sizeof(glm::vec3), velocities.size() * sizeof(glm::vec3), &velocities[0][0]);
+    glBindBuffer(GL_ARRAY_BUFFER, positionVBO[i]);
+    glBufferData(GL_ARRAY_BUFFER, positions.size() * sizeof(glm::vec3), &positions[0][0], GL_DYNAMIC_DRAW);
+  }
+  
+  // Allocate and initialize the position vertex buffer
+  for (int i = 0; i < 2; ++i) {
+    glBindBuffer(GL_ARRAY_BUFFER, velocityVBO[i]);
+    glBufferData(GL_ARRAY_BUFFER, velocities.size() * sizeof(glm::vec3), &velocities[0][0], GL_DYNAMIC_DRAW);
   }
 }
 
@@ -294,11 +299,13 @@ void Render()
   glBindVertexArray(snowVAO);
   
   // Establish the necessary attribute bindings for rendering
-  glBindBuffer(GL_ARRAY_BUFFER, snowVBO[iteration % 2]);
+  glBindBuffer(GL_ARRAY_BUFFER, positionVBO[iteration % 2]);
   glEnableVertexAttribArray(renderPosition);
   glVertexAttribPointer(renderPosition, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
+  
+  glBindBuffer(GL_ARRAY_BUFFER, velocityVBO[iteration % 2]);
   glEnableVertexAttribArray(renderVelocity);
-  glVertexAttribPointer(renderVelocity, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)(positions.size() * sizeof(glm::vec3)));
+  glVertexAttribPointer(renderVelocity, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
   
   // Render snowflakes to screen
   glDrawArrays(GL_POINTS, 0, (int)positions.size());
@@ -328,14 +335,17 @@ void Feedback()
   glBindVertexArray(snowVAO);
 
   // Establish the necessary attribute bindings for transform feedback
-  glBindBuffer(GL_ARRAY_BUFFER, snowVBO[iteration % 2]);
+  glBindBuffer(GL_ARRAY_BUFFER, positionVBO[iteration % 2]);
   glEnableVertexAttribArray(feedbackPosition);
   glVertexAttribPointer(feedbackPosition, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
+  
+  glBindBuffer(GL_ARRAY_BUFFER, velocityVBO[iteration % 2]);
   glEnableVertexAttribArray(feedbackVelocity);
-  glVertexAttribPointer(feedbackVelocity, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)(positions.size() * sizeof(glm::vec3)));
+  glVertexAttribPointer(feedbackVelocity, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
 
   // Re-bind our output VBO
-  glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, snowVBO[(iteration + 1) % 2]);
+  glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, positionVBO[(iteration + 1) % 2]);
+  glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, velocityVBO[(iteration + 1) % 2]);
 
   // Perform the feedback transform
   glBeginTransformFeedback(GL_POINTS);
@@ -344,7 +354,8 @@ void Feedback()
   glFlush();
 			
   // Swap the 2 buffers
-  std::swap(snowVBO[0], snowVBO[1]);
+  std::swap(positionVBO[0], positionVBO[1]);
+  std::swap(velocityVBO[0], velocityVBO[1]);
   
   // Disable the attributes used in transform feedback
   glDisableVertexAttribArray(feedbackPosition);
@@ -561,7 +572,8 @@ int main(int argc, char *argv[])
   }
 
   //Cleanup 
-  glDeleteBuffers(2, snowVBO);
+  glDeleteBuffers(2, positionVBO);
+  glDeleteBuffers(2, velocityVBO);
   glDeleteVertexArrays(1, &snowVAO);
   glDeleteProgram(snowProgram);
   glDeleteProgram(backdropProgram);
