@@ -320,11 +320,8 @@ glm::mat4 getMVP()
   return MVP;
    
 }
-
-void Render()
+void RenderSnow()
 {
-  glClearColor(0.6f,0.6f,0.6f,0.0f);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   //Get current Camera Transformation
   glm::mat4 MVP = getMVP();
@@ -360,6 +357,15 @@ void Render()
   
   // Unbind the shader program
   glUseProgram(0);
+
+
+}
+void Render()
+{
+  glClearColor(0.6f,0.6f,0.6f,0.0f);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  RenderSnow();
   
   glfwSwapBuffers(window);
 }
