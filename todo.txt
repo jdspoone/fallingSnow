@@ -1,5 +1,8 @@
-1. Particle emission
+1. Perlin noise wind function
+  -will require significantly better particle looping as well
 
-2. Perlin noise wind
+3. Re-introduce background scene
+  -improved camera mobility
 
-3. Interesting snowflake geometry
+3. Koch snowflakes
+  -snowflake rotation?
