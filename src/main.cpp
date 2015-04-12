@@ -28,18 +28,18 @@ double Timer = glfwGetTime();
 vector<glm::vec3> positions;
 vector<glm::vec3> velocities;
 vector<GLfloat> rotationAngles;
-GLuint snowProgram, feedbackProgram, backdropProgram, floorProgram;
+GLuint snowProgram, feedbackProgram, sceneProgram;
 GLuint renderPosition, renderVelocity, renderRotation;
 GLuint feedbackPosition, feedbackVelocity, feedbackRotation;
-GLuint snowVAO;
+GLuint snowVAO, floorVAO;
 GLuint positionVBO[2];
 GLuint velocityVBO[2];
-GLuint backTID, floorTID;
+GLuint floorTID;
 
 unsigned int iteration = 0;
 
 //====== Camera Settings =======
-glm::vec3 cameraPosition = glm::vec3(0.0f); //initial starting position
+glm::vec3 cameraPosition = glm::vec3(0.1f); //initial starting position
 glm::vec3 cameraDirection;
 glm::vec3 cameraRight; 
 GLfloat camera_step = 0.01f;
@@ -209,18 +209,136 @@ GLuint loadShadersVF(const char *vPath, const char *fPath)
 
 #pragma mark - OpenGL
 
+// Loads a PNG from file, and adds info to texture
+void LoadTexture(const char* filename, GLuint textureID, GLuint shaderID)
+{
+	/*
+	* Load Image
+	*/
+	vector<unsigned char> image; //the raw pixels
+  	unsigned width, height;
+
+  	//decode
+  	unsigned error = lodepng::decode(image, width, height, filename);
+	cout<< filename <<" >> height: "<<height<<", width: "<<width<<endl;
+
+  	//if there's an error, display it
+  	if(error) cout << "decoder error " << error << ": " 
+		<< lodepng_error_text(error) << endl;
+	
+	//Bind
+	glBindTexture(GL_TEXTURE_2D, textureID);
+
+	//Load image into texture
+	glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, &image[0]);
+
+	//For sampling
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+}
+
+class GLobject
+{
+public:
+    GLobject(glm::vec3 p, glm::vec3 n, glm::vec3 t)
+    {
+        position = p;
+        normal = n;
+        texture = t; //UV + Alpha
+    }
+    glm::vec3 position, normal, texture;
+}; 
+
+//Creates a VAO from GLobject data
+GLuint CreateVAO3( vector < GLobject > data, GLuint shader)
+{
+    GLuint vertex_location = glGetAttribLocation(shader, "position");
+    GLuint normal_location = glGetAttribLocation(shader, "normal");
+    GLuint texture_location = glGetAttribLocation(shader, "texture");
+
+    GLuint vertexArrayID;
+
+    glGenVertexArrays(1, &vertexArrayID);
+    glBindVertexArray(vertexArrayID);
+
+    GLuint vertexbuffer;
+    glGenBuffers(1, &vertexbuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+
+    glBufferData(GL_ARRAY_BUFFER, sizeof(GLobject) * data.size(), &data[0], GL_STATIC_DRAW);    
+
+    glEnableVertexAttribArray(vertex_location);
+    glVertexAttribPointer(vertex_location,3,GL_FLOAT,GL_FALSE,sizeof(GLobject),(void*)0);
+
+    glEnableVertexAttribArray(normal_location);
+    glVertexAttribPointer(normal_location,3,GL_FLOAT,GL_FALSE,sizeof(GLobject),(GLvoid *)sizeof(glm::vec3));
+
+    glEnableVertexAttribArray(texture_location);
+    glVertexAttribPointer(texture_location,3,GL_FLOAT,GL_FALSE,sizeof(GLobject),(GLvoid *)(sizeof(glm::vec3)*2));
+
+    glBindVertexArray(0);
+
+    return vertexArrayID;
+}
+
+void LoadScenery()
+{
+
+  //Load Shader
+  sceneProgram = loadShadersVF("Shaders/Scene/vertex.glsl", "Shaders/Scene/fragment.glsl");
+
+  //Load a Texture
+  glGenTextures(1, &floorTID); //load back texture ID
+  glBindTexture(GL_TEXTURE_2D, floorTID);
+  LoadTexture("Textures/cowcube.png", sceneProgram, floorTID); //Credit: Etienne!
+
+  //Build Floor
+  vector<GLobject> floor;
+  glm::vec3 normal = glm::vec3(0.0f, 1.0f, 0.0f);
+
+  GLobject P0 = GLobject(glm::vec3(-1.0f, 0.0f, 1.0f),   //vertex
+                         normal,                         //normal
+                         glm::vec3(0.0f, 0.0f, 1.0f));   //tex coords + alpha
+
+  GLobject P1 = GLobject(glm::vec3(-1.0f, 0.0f, -1.0f),   
+                         normal,                         
+                         glm::vec3(0.0f, 1.0f, 1.0f));   
+
+  GLobject P2 = GLobject(glm::vec3(1.0f, 0.0f, 1.0f),   
+                         normal,                         
+                         glm::vec3(1.0f, 0.0f, 1.0f));  
+ 
+  GLobject P3 = GLobject(glm::vec3(1.0f, 0.0f, 1.0f),   
+                         normal,                         
+                         glm::vec3(1.0f, 0.0f, 1.0f));   
+
+  GLobject P4 = GLobject(glm::vec3(-1.0f, 0.0f, -1.0f),   
+                         normal,                         
+                         glm::vec3(0.0f, 1.0f, 1.0f));   
+
+  GLobject P5 = GLobject(glm::vec3(1.0f, 0.0f, -1.0f),   
+                         normal,                         
+                         glm::vec3(1.0f, 1.0f, 1.0f));   
+
+  floor.push_back(P0);
+  floor.push_back(P1);
+  floor.push_back(P2);
+  floor.push_back(P3);
+  floor.push_back(P4);
+  floor.push_back(P5);
+
+  floorVAO = CreateVAO3(floor, sceneProgram);
+
+}
+
 void setupRenderingContext()
 {
   //Load vertex, geomtry, and fragment shaders for snow
   snowProgram = loadShadersVGF("Shaders/Snow/vertex.glsl", "Shaders/Snow/geometry.glsl", "Shaders/Snow/fragment.glsl");
-
-  //for the floor
-  floorProgram = loadShadersVF("Shaders/Floor/vertex.glsl", "Shaders/Floor/fragment.glsl");
-
-  //Load vertex, and fragment shaders for plane textures
-  backdropProgram = loadShadersVF("Shaders/Backdrop/vertex.glsl", "Shaders/Backdrop/fragment.glsl");
-  glGenTextures(1, &backTID); //load back texture ID
-
+ 
   //Load vertex shader to preform feedback transformations on
   feedbackProgram = loadFeedbackShader("Shaders/Feedback/vertex.glsl");
   const GLchar* feedbackVaryings[] = { "nextPosition", "nextVelocity" };
@@ -244,6 +362,8 @@ void setupRenderingContext()
   glGenBuffers(2, velocityVBO);
   
   glEnable(GL_DEPTH_TEST);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 
@@ -320,6 +440,32 @@ glm::mat4 getMVP()
   return MVP;
    
 }
+
+void RenderScene()
+{
+  //Get current Camera Transformation
+  glm::mat4 MVP = getMVP();
+ 
+  glUseProgram(sceneProgram);
+  
+  //Activate Texture
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, floorTID);
+
+  // Update MVP
+  GLuint MatrixID = glGetUniformLocation(sceneProgram, "MVP");
+  glUniformMatrix4fv(MatrixID,  1, GL_FALSE, &MVP[0][0]);
+  
+  // Bind the VAO
+  glBindVertexArray(floorVAO);
+  glDrawArrays(GL_TRIANGLES, 0, 6);
+
+  glBindVertexArray(0);
+
+  glUseProgram(0);
+  
+}
+
 void RenderSnow()
 {
 
@@ -360,12 +506,16 @@ void RenderSnow()
 
 
 }
+
 void Render()
 {
   glClearColor(0.6f,0.6f,0.6f,0.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   RenderSnow();
+
+  if (key_one)
+      RenderScene();
   
   glfwSwapBuffers(window);
 }
@@ -419,37 +569,6 @@ void Feedback()
 
 
 
-// Loads a PNG from file, and adds info to texture
-void LoadTexture(const char* filename, GLuint textureID, GLuint shaderID)
-{
-	/*
-	* Load Image
-	*/
-	vector<unsigned char> image; //the raw pixels
-  	unsigned width, height;
-
-  	//decode
-  	unsigned error = lodepng::decode(image, width, height, filename);
-	cout<< filename <<" >> height: "<<height<<", width: "<<width<<endl;
-
-  	//if there's an error, display it
-  	if(error) cout << "decoder error " << error << ": " 
-		<< lodepng_error_text(error) << endl;
-	
-	//Bind
-	glBindTexture(GL_TEXTURE_2D, textureID);
-
-	//Load image into texture
-	glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, &image[0]);
-
-	//For sampling
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-}
-
 
 #pragma mark - GLFW
 
@@ -496,7 +615,7 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
   if (key == GLFW_KEY_DOWN && (action == GLFW_PRESS || action == GLFW_REPEAT))
     particleCount = std::max(particleCount - particleStep, 0u);
   if (key == GLFW_KEY_1 && action == GLFW_PRESS)
-      key_one = !key_one;
+      {key_one = !key_one; cout<<"key_one toggled"<<endl;}
   if (key == GLFW_KEY_2 && action == GLFW_PRESS)
       key_two = !key_two;
 }
@@ -558,15 +677,13 @@ int main(int argc, char *argv[])
   
   setupRenderingContext();
   LoadPoints();
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  LoadScenery();
 
   while(!glfwWindowShouldClose(window)) {
     FPS();
     glfwPollEvents();
     Render();
     Feedback();
-
   }
 
   //Cleanup 
@@ -574,8 +691,7 @@ int main(int argc, char *argv[])
   glDeleteBuffers(2, velocityVBO);
   glDeleteVertexArrays(1, &snowVAO);
   glDeleteProgram(snowProgram);
-  glDeleteProgram(backdropProgram);
-  glDeleteProgram(floorProgram);
+  glDeleteProgram(sceneProgram);
   glDeleteProgram(feedbackProgram);
   glfwDestroyWindow(window);
   glfwTerminate();
