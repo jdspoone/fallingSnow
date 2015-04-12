@@ -33,7 +33,7 @@ vector<GLfloat> rotationAngles;
 GLuint snowProgram, feedbackProgram, backdropProgram, floorProgram;
 GLuint renderPosition, renderVelocity, renderRotation;
 GLuint feedbackPosition, feedbackVelocity, feedbackRotation;
-GLuint vao, vbo[2];
+GLuint snowVAO, snowVBO[2];
 GLuint backTID, floorTID;
 
 unsigned int iteration = 0;
@@ -262,7 +262,7 @@ void Render()
   glUseProgram(snowProgram);
 
   // Bind the VAO
-  glBindVertexArray(vao);
+  glBindVertexArray(snowVAO);
   
   // Render snowflakes to screen
   glDrawArrays(GL_POINTS, 0, (int)positions.size());
@@ -326,15 +326,15 @@ void LoadPoints()
 
   // Allocate and initialize the vertex buffers
   for (int i = 0; i < 3; ++i) {
-    glBindBuffer(GL_ARRAY_BUFFER, vbo[i]);
+    glBindBuffer(GL_ARRAY_BUFFER, snowVBO[i]);
     glBufferData(GL_ARRAY_BUFFER, MAX_BUFFER_SIZE, NULL, GL_DYNAMIC_DRAW);
     glBufferSubData(GL_ARRAY_BUFFER, 0, positions.size() * sizeof(glm::vec3), &positions[0][0]);
     glBufferSubData(GL_ARRAY_BUFFER, positions.size() * sizeof(glm::vec3), velocities.size() * sizeof(glm::vec3), &velocities[0][0]);
   }
 
   // Set up the attribute bindings for our VAO
-  glBindVertexArray(vao);
-  glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+  glBindVertexArray(snowVAO);
+  glBindBuffer(GL_ARRAY_BUFFER, snowVBO[0]);
   glEnableVertexAttribArray(renderPosition);
   glVertexAttribPointer(renderPosition, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
   glEnableVertexAttribArray(renderVelocity);
@@ -351,10 +351,10 @@ void Feedback()
   glUseProgram(feedbackProgram);
   
   // Bind the VAO
-  glBindVertexArray(vao);
+  glBindVertexArray(snowVAO);
 
   // Re-bind our output VBO
-  glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, vbo[(iteration + 1) % 2]);
+  glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, snowVBO[(iteration + 1) % 2]);
 
   // Perform the feedback transform
   glBeginTransformFeedback(GL_POINTS);
@@ -363,14 +363,14 @@ void Feedback()
   glFlush();
 			
   // Swap the 2 buffers
-  std::swap(vbo[0], vbo[1]);
+  std::swap(snowVBO[0], snowVBO[1]);
   
   // Disable the attributes used in transform feedback
   glDisableVertexAttribArray(feedbackPosition);
   glDisableVertexAttribArray(feedbackVelocity);
   
   // Re-bind our input VBO
-  glBindBuffer(GL_ARRAY_BUFFER, vbo[iteration % 2]);
+  glBindBuffer(GL_ARRAY_BUFFER, snowVBO[iteration % 2]);
   
   // Enable the attributes used in rendering to screen
   glEnableVertexAttribArray(renderPosition);
@@ -496,10 +496,10 @@ void setupRenderingContext()
   feedbackRotation = glGetAttribLocation(feedbackProgram, "previousRotation");
 
   // Generate our vertex array object
-  glGenVertexArrays(1, &vao);
+  glGenVertexArrays(1, &snowVAO);
 
   // Generate our vertex buffer objects
-  glGenBuffers(2, vbo);
+  glGenBuffers(2, snowVBO);
   
   glEnable(GL_DEPTH_TEST);
 }
@@ -575,8 +575,8 @@ int main(int argc, char *argv[])
   }
 
   //Cleanup 
-  glDeleteBuffers(2, vbo);
-  glDeleteVertexArrays(1, &vao);
+  glDeleteBuffers(2, snowVBO);
+  glDeleteVertexArrays(1, &snowVAO);
   glDeleteProgram(snowProgram);
   glDeleteProgram(backdropProgram);
   glDeleteProgram(floorProgram);
