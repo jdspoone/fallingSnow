@@ -31,9 +31,9 @@ vector<glm::vec3> positions;
 vector<glm::vec3> velocities;
 vector<GLfloat> rotationAngles;
 GLuint snowProgram, feedbackProgram, backdropProgram, floorProgram;
-GLuint particlePosition, particleVelocity, particleRotation;
+GLuint renderPosition, renderVelocity, renderRotation;
 GLuint feedbackPosition, feedbackVelocity, feedbackRotation;
-GLuint vao[2], vbo[2], plane_vao, back_vbo, floor_vbo;
+GLuint vao, vbo[2], plane_vao, back_vbo, floor_vbo;
 GLuint backTID, floorTID;
 
 unsigned int iteration = 0;
@@ -262,55 +262,34 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 }
 
 
-/*
-* Draw Calls
-*/
 void Render()
 {
   glClearColor(0.6f,0.6f,0.6f,0.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  //Draw Floor
-  if (key_two)
-  {
-  glUseProgram(floorProgram);
-  glBindVertexArray(plane_vao);
-
-  glBindBuffer(GL_ARRAY_BUFFER, floor_vbo); 
-  glEnableVertexAttribArray(0); //vertices location
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 5, 0);
-  glEnableVertexAttribArray(1); //texture coords location
-  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 5, (void*)(sizeof(GL_FLOAT)*3));
-  glDrawArrays(GL_TRIANGLES, 0, 6);
-  }
-
-  //Draw Backdrop  
-  if (key_one)
-  {
-  glUseProgram(backdropProgram);
-
-  glBindVertexArray(plane_vao);
-  glBindBuffer(GL_ARRAY_BUFFER, back_vbo); 
-  
-  glEnableVertexAttribArray(0); //vertices location
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 5, 0);
-  glEnableVertexAttribArray(1); //texture coords location
-  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 5, (void*)(sizeof(GL_FLOAT)*3));
-  
-  GLuint texUnitLoc = glGetUniformLocation(backdropProgram, "texUnit"); 
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, backTID); 
-  glUniform1i(backdropProgram, texUnitLoc);
-
-  glDrawArrays(GL_TRIANGLES, 0, 6);
-  }
-  //Draw Snow
+  // Bind the shader program
   glUseProgram(snowProgram);
 
-  glBindVertexArray(vao[iteration % 2]);
+  // Bind the VAO
+  glBindVertexArray(vao);
+  
+  // Render snowflakes to screen
   glDrawArrays(GL_POINTS, 0, (int)positions.size());
 
+  // Disable the attributes used for rendering
+  glDisableVertexAttribArray(renderPosition);
+  glDisableVertexAttribArray(renderVelocity);
+  
+  // Enable the attributes used for transform feedback
+  glEnableVertexAttribArray(feedbackPosition);
+  glVertexAttribPointer(feedbackPosition, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
+  glEnableVertexAttribArray(feedbackVelocity);
+  glVertexAttribPointer(feedbackVelocity, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)(positions.size() * sizeof(glm::vec3)));
+  
+  // Unbind the VAO
   glBindVertexArray(0);
+  
+  // Unbind the shader program
   glUseProgram(0);
   
   glfwSwapBuffers(window);
@@ -357,90 +336,35 @@ void LoadPoints()
   }
 
   // Allocate and initialize the vertex buffers
+  for (int i = 0; i < 3; ++i) {
+    glBindBuffer(GL_ARRAY_BUFFER, vbo[i]);
+    glBufferData(GL_ARRAY_BUFFER, MAX_BUFFER_SIZE, NULL, GL_DYNAMIC_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, positions.size() * sizeof(glm::vec3), &positions[0][0]);
+    glBufferSubData(GL_ARRAY_BUFFER, positions.size() * sizeof(glm::vec3), velocities.size() * sizeof(glm::vec3), &velocities[0][0]);
+  }
+
+  // Set up the attribute bindings for our VAO
+  glBindVertexArray(vao);
   glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-  glBufferData(GL_ARRAY_BUFFER, MAX_BUFFER_SIZE, NULL, GL_DYNAMIC_DRAW);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, positions.size() * sizeof(glm::vec3), &positions[0][0]);
-  glBufferSubData(GL_ARRAY_BUFFER, positions.size() * sizeof(glm::vec3), velocities.size() * sizeof(glm::vec3), &velocities[0][0]);
-
-  glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-  glBufferData(GL_ARRAY_BUFFER, MAX_BUFFER_SIZE, NULL, GL_DYNAMIC_DRAW);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, positions.size() * sizeof(glm::vec3), &positions[0][0]);
-  glBufferSubData(GL_ARRAY_BUFFER, positions.size() * sizeof(glm::vec3), velocities.size() * sizeof(glm::vec3), &velocities[0][0]);
-
-  // Configure bindings in ours vertex array objects
-  glBindVertexArray(vao[0]);
-  glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-  glEnableVertexAttribArray(particlePosition);
-  glVertexAttribPointer(particlePosition, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
-  glEnableVertexAttribArray(particleVelocity);
-  glVertexAttribPointer(particleVelocity, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)(positions.size() * sizeof(glm::vec3)));
-  glEnableVertexAttribArray(feedbackPosition);
-  glVertexAttribPointer(feedbackPosition, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
-  glEnableVertexAttribArray(feedbackVelocity);
-  glVertexAttribPointer(feedbackVelocity, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)(positions.size() * sizeof(glm::vec3)));
+  glEnableVertexAttribArray(renderPosition);
+  glVertexAttribPointer(renderPosition, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
+  glEnableVertexAttribArray(renderVelocity);
+  glVertexAttribPointer(renderVelocity, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)(positions.size() * sizeof(glm::vec3)));
   glBindVertexArray(0);
-  
-  glBindVertexArray(vao[1]);
-  glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-  glEnableVertexAttribArray(particlePosition);
-  glVertexAttribPointer(particlePosition, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
-  glEnableVertexAttribArray(particleVelocity);
-  glVertexAttribPointer(particleVelocity, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)(positions.size() * sizeof(glm::vec3)));
-  glEnableVertexAttribArray(feedbackPosition);
-  glVertexAttribPointer(feedbackPosition, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
-  glEnableVertexAttribArray(feedbackVelocity);
-  glVertexAttribPointer(feedbackVelocity, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)(positions.size() * sizeof(glm::vec3)));
-  glBindVertexArray(0);
-}
-
-
-/*
- * Checks to see if the particle count is where we want it, and adds/removes particles 
- * if necessary.
- */
-void AdjustPoints()
-{
-  int difference = particleCount - (int)positions.size();
-
-	// Early exit if no changes needed.
-	if (difference == 0) return;
-
-	int previous = (int)positions.size();
-
-    if (difference < 0)
-    {
-        // More points than there should be, get rid of some.
-        for (int i = 0; i > std::max(difference, -maxChangePerFrame); i--)
-        {
-            positions.pop_back();
-		}
-    }
-    else if (difference > 0)
-    {
-        // Not enough points, make more.
-        for (int i = 0; i < std::min(difference, maxChangePerFrame); i++)
-        {
-            GeneratePoint();
-		}
-		// Buffer new data.
-		glBindVertexArray(vao[iteration % 2]);
-		glBufferSubData(GL_ARRAY_BUFFER, previous * sizeof(glm::vec4), std::min(difference, maxChangePerFrame) * sizeof(glm::vec4), &positions[previous][0]);
-
-	}
-	cout << "Particle count: " << positions.size() << endl;
-
-	glBindVertexArray(0);
 }
 
 
 void Feedback()
 {
   glEnable(GL_RASTERIZER_DISCARD);
+  
+  // Bind the transform feedback program
+  glUseProgram(feedbackProgram);
+  
+  // Bind the VAO
+  glBindVertexArray(vao);
 
-  glUseProgram(feedbackProgram); //Bind
-  glBindVertexArray(vao[iteration % 2]);
-
-  // Re-bind our output buffer
+  // Re-bind our output VBO
   glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, vbo[(iteration + 1) % 2]);
 
   // Perform the feedback transform
@@ -451,12 +375,27 @@ void Feedback()
 			
   // Swap the 2 buffers
   std::swap(vbo[0], vbo[1]);
-	  
-  glDisable(GL_RASTERIZER_DISCARD);
-
   
+  // Disable the attributes used in transform feedback
+  glDisableVertexAttribArray(feedbackPosition);
+  glDisableVertexAttribArray(feedbackVelocity);
+  
+  // Re-bind our input VBO
+  glBindBuffer(GL_ARRAY_BUFFER, vbo[iteration % 2]);
+  
+  // Enable the attributes used in rendering to screen
+  glEnableVertexAttribArray(renderPosition);
+  glVertexAttribPointer(renderPosition, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
+  glEnableVertexAttribArray(renderVelocity);
+  glVertexAttribPointer(renderVelocity, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)(positions.size() * sizeof(glm::vec3)));
+  
+  // Unbind the VAO
   glBindVertexArray(0);
-  glUseProgram(0); //Unbind
+  
+  // Unbind the transform feedback program
+  glUseProgram(0);
+  
+  glDisable(GL_RASTERIZER_DISCARD);
 }
 
 
@@ -544,152 +483,6 @@ void LoadTexture(const char* filename, GLuint textureID, GLuint shaderID)
 
 }
 
-//https://code.google.com/p/battlestar-tux/source/browse/procedural/simplexnoise.py
-//Really should just find a decent SimplexNoise Library...
-//Implemented this in Shaders/Floor/fragment.glsl
-/*
-GLfloat simplex2D(const GLfloat x, const GLfloat y)
-{
-   GLfloat total = 0.0f;
-   GLfloat freq = 0.0f;
-   GLfloat amplitude  = 1.0f; 
-   GLfloat max_amplitude = 0.0f;
-   GLuint octaves = 8; //8 or 16 is recommended for 2D simplex
-   GLfloat persistence = 1.0; //Check out what this is supposed to be
-   GLfloat scale = 1.0; //Check out what this is supposed to be
-
-   GLuint perm[] = {
-   151,160,137,91,90,15,131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,
-   8,99,37,240,21,10,23,190,6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,
-   35,11,32,57,177,33,88,237,149,56,87,174,20,125,136,171,168,68,175,74,165,71,
-   134,139,48,27,166,77,146,158,231,83,111,229,122,60,211,133,230,220,105,92,41,
-   55,46,245,40,244,102,143,54,65,25,63,161,1,216,80,73,209,76,132,187,208,89,
-   18,169,200,196,135,130,116,188,159,86,164,100,109,198,173,186,3,64,52,217,226,
-   250,124,123,5,202,38,147,118,126,255,82,85,212,207,206,59,227,47,16,58,17,182,
-   189,28,42,223,183,170,213,119,248,152,2,44,154,163,70,221,153,101,155,167,43,
-   172,9,129,22,39,253,19,98,108,110,79,113,224,232,178,185,112,104,218,246,97,
-   228,251,34,242,193,238,210,144,12,191,179,162,241,81,51,145,235,249,14,239,
-   107,49,192,214,31,181,199,106,157,184,84,204,176,115,121,50,45,127,4,150,254,
-   138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180,
-
-   151,160,137,91,90,15,131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,
-   8,99,37,240,21,10,23,190,6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,
-   35,11,32,57,177,33,88,237,149,56,87,174,20,125,136,171,168,68,175,74,165,71,
-   134,139,48,27,166,77,146,158,231,83,111,229,122,60,211,133,230,220,105,92,41,
-   55,46,245,40,244,102,143,54,65,25,63,161,1,216,80,73,209,76,132,187,208,89,
-   18,169,200,196,135,130,116,188,159,86,164,100,109,198,173,186,3,64,52,217,226,
-   250,124,123,5,202,38,147,118,126,255,82,85,212,207,206,59,227,47,16,58,17,182,
-   189,28,42,223,183,170,213,119,248,152,2,44,154,163,70,221,153,101,155,167,43,
-   172,9,129,22,39,253,19,98,108,110,79,113,224,232,178,185,112,104,218,246,97,
-   228,251,34,242,193,238,210,144,12,191,179,162,241,81,51,145,235,249,14,239,
-   107,49,192,214,31,181,199,106,157,184,84,204,176,115,121,50,45,127,4,150,254,
-   138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180
-   };
-
-   vector<glm::vec3> grad3;
-   grad3.push_back(glm::vec3(1, 1, 0));
-   grad3.push_back(glm::vec3(-1, 1, 0));
-   grad3.push_back(glm::vec3(1, -1, 0));
-   grad3.push_back(glm::vec3(-1, -1, 0));
-   grad3.push_back(glm::vec3(1, 0, 1));
-   grad3.push_back(glm::vec3(-1, 0, 1));
-   grad3.push_back(glm::vec3(1, 0, -1));
-   grad3.push_back(glm::vec3(-1, 0, -1));
-   grad3.push_back(glm::vec3(0, 1, 1));
-   grad3.push_back(glm::vec3(0, -1, 1));
-   grad3.push_back(glm::vec3(0, 1, -1));
-   grad3.push_back(glm::vec3(0, -1, -1));
- 
-   for (int o = 0; o < octaves; o++)
-   {
-      //==== Begin Noise 2D ======
-      GLfloat noise = 0.0;
-      GLfloat n0 = 0.0, n1 = 0.0, n2 = 0.0;
-      GLfloat X = x * freq;
-      GLfloat Y = y * freq;
-
-      GLfloat F2 = 0.5 * (sqrt(3.0) - 1.0);
-      GLfloat s = (X + Y) * F2;
-      GLfloat i = GLint(X + s);
-      GLfloat j = GLint(Y + s);
-
-      GLfloat G2 = (3.0 - sqrt(3.0) ) / 6.0;
-      GLfloat t = GLfloat(i + j) * G2;
-      GLfloat X0 = i - t;
-      GLfloat Y0 = j - t;
-      GLfloat x0 = X - X0;
-      GLfloat y0 = Y - Y0;
-
-      GLuint i1 = 0, j1 = 0;
-      if (x0 > y0)
-      {
-          i1 = 1;
-          j1 = 0;
-      }
-      else
-      {
-          i1 = 0;
-          j1 = 1;
-      }
-      
-      GLfloat x1 = x0 - i1 + G2;
-      GLfloat y1 = y0 - j1 + G2;
-      GLfloat x2 = x0 - 1.0 + 2.0 * G2;  
-      GLfloat y2 = y0 - 1.0 + 2.0 * G2;
-   
-      GLint ii = GLint(i) & 255;
-      GLint jj = GLint(j) & 255;
-      GLint gi0 = perm[ii+perm[jj]] % 12;
-      GLint gi1 = perm[ii+i1+perm[jj+j1]] % 12;
-      GLint gi2 = perm[ii+1+perm[jj+1]] % 12; 
-
-      GLfloat t0 = 0.5 - x0*x0 - y0*y0;
-      if (t0 < 0)
-      {
-          n0 = 0.0;
-      }
-      else
-      {
-          t0 *= t0;
-          n0 = t0 * t0 * (grad3[gi0].x * x0 + grad3[gi0].y * y0);
-      }
-
-      GLfloat t1 = 0.5 - x1*x1 - y1*y1;
-      if (t1 < 0)
-      {
-         n1 = 0.0;
-      }
-      else
-      {
-        t1 *= t1;
-        n1 = t1 * t1 * (grad3[gi1].x * x1 + grad3[gi1].y * y1);
-      }
-
-      GLfloat t2 = 0.5 - x2*x2-y2*y2;
-      if (t2 < 0)
-      {
-        n2 = 0.0;
-      }
-      else
-      {
-        t2 *= t2;
-        n2 = t2 * t2 * (grad3[gi2].x * x2 + grad3[gi2].y * y2);
-      }
-     
-      noise = 70 * (n0 + n1 + n2);
- 
-      //==== End Noise 2D ========
-   
-      // Update Values
-      total += noise * amplitude;
-      freq *= 2.0;
-      max_amplitude += amplitude;
-      amplitude *= persistence; 
-
-   }
-   return (total / max_amplitude);
-}
-*/
 
 void setupRenderingContext()
 {
@@ -705,101 +498,24 @@ void setupRenderingContext()
 
   //Load vertex shader to preform feedback transformations on
   feedbackProgram = loadFeedbackShader("Shaders/Feedback/vertex.glsl");
-  const GLchar* feedbackVaryings[] = { "nextPosition", "nextVelocity" };
+  const GLchar* feedbackVaryings[] = { "nextPosition" };
   glTransformFeedbackVaryings(feedbackProgram, 1, feedbackVaryings, GL_INTERLEAVED_ATTRIBS);
   glLinkProgram(feedbackProgram);
 
-  //Where to pass in vertices to the shaders
-  particlePosition = glGetAttribLocation(snowProgram, "position");
-  particleVelocity = glGetAttribLocation(snowProgram, "velocity");
-  particleRotation = glGetAttribLocation(snowProgram, "rotation");
+  // Attribute bindings
+  renderPosition = glGetAttribLocation(snowProgram, "position");
+  renderVelocity = glGetAttribLocation(snowProgram, "velocity");
+  renderRotation = glGetAttribLocation(snowProgram, "rotation");
 
-  feedbackPosition = glGetAttribLocation(feedbackProgram, "position");
-  feedbackVelocity = glGetAttribLocation(feedbackProgram, "velocity");
-  feedbackRotation = glGetAttribLocation(feedbackProgram, "rotation");
+  feedbackPosition = glGetAttribLocation(feedbackProgram, "previousPosition");
+  feedbackVelocity = glGetAttribLocation(feedbackProgram, "previousVelocity");
+  feedbackRotation = glGetAttribLocation(feedbackProgram, "previousRotation");
 
-  // Generate our vertex array objects
-  glGenVertexArrays(1, &vao[0]);
-  glGenVertexArrays(1, &vao[1]);
+  // Generate our vertex array object
+  glGenVertexArrays(1, &vao);
 
   // Generate our vertex buffer objects
-  glGenBuffers(1, &vbo[0]);
-  glGenBuffers(1, &vbo[1]);
-
-  //Create VAO for planes (backdrops)
-  glGenVertexArrays(1, &plane_vao);
-  glBindVertexArray(plane_vao);
-
-  glEnableVertexAttribArray(0); //vertices location
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 5, 0);
-  glEnableVertexAttribArray(1); //texture coords location
-  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 5, (void*)(sizeof(GL_FLOAT)*3));
-
-  // Setup Back Plane VBO
-  glGenBuffers(1, &back_vbo);
-  glBindBuffer(GL_ARRAY_BUFFER, back_vbo); 
-  //Draw back plane
-   GLfloat vertexBackPlaneData[] = {   //Triangle A
-                                   -0.1f, 0.1f, 1.0f, //v0
-                                    0.0f, 0.0f,       //uv0
- 
-                                   -0.1f, -0.1f, 1.0f,//v1
-                                    0.0f, 1.0f,       //uv1
-
-                                    0.1f, 0.1f, 1.0f, //v2
-                                    1.0f, 0.0f,       //uv2
-
-                                    //Triangle B
-                                    0.1f, 0.1f, 1.0f, //v3
-                                    1.0f, 0.0f,       //uv3
-
-                                   -0.1f, -0.1f, 1.0f,//v4
-                                    0.0f, 1.0f,       //uv4
-
-                                    0.1f, -0.1f, 1.0f,//v5
-                                    1.0f, 1.0f        //uv6
-													  			};
-  glBufferData(GL_ARRAY_BUFFER,sizeof(GLfloat)*30 , &vertexBackPlaneData[0], GL_STATIC_DRAW);
-  //glBindBuffer(GL_ARRAY_BUFFER, 0); //unbind 
-
-  //Load Texture for plane
-  glGenTextures(1, &backTID);
-  glBindTexture(GL_TEXTURE_2D, backTID);
-  LoadTexture("Textures/cowcube.png", backdropProgram, backTID); //Credit: Etienne!
-
-  // Setup Floor Plane VBO
-  glGenBuffers(1, &floor_vbo);
-  glBindBuffer(GL_ARRAY_BUFFER, floor_vbo); 
-  //Draw back plane
-  GLfloat vertexFloorPlaneData[] = {   //Triangle A
-                                   -1.0f, -0.1f, 1.0f, //v0
-                                    0.0f, 0.0f,       //uv0
- 
-                                   -1.0f, -0.1f, -1.0f,//v1
-                                    0.0f, 1.0f,       //uv1
-
-                                    1.0f, -0.1f, 1.0f, //v2
-                                    1.0f, 0.0f,       //uv2
-
-                                    //Triangle B
-                                    1.0f, -0.1f, 1.0f, //v3
-                                    1.0f, 0.0f,       //uv3
-
-                                   -1.0f, -0.1f, -1.0f,//v4
-                                    0.0f, 1.0f,       //uv4
-
-                                    1.0f, -0.1f, -1.0f,//v5
-                                    1.0f, 1.0f        //uv6
-													  			};
-  glBufferData(GL_ARRAY_BUFFER,sizeof(GLfloat)*30 , &vertexFloorPlaneData[0], GL_STATIC_DRAW);
-  //glBindBuffer(GL_ARRAY_BUFFER, 0); //unbind 
-
-  //glGenTextures(1, &floorTID);
-  //glBindTexture(GL_TEXTURE_2D, floorTID);
-  //Generate 2D texture using simplex2D or perlin2D or something
-  
-  
-  glBindVertexArray(0);
+  glGenBuffers(2, vbo);
   
   glEnable(GL_DEPTH_TEST);
 }
@@ -860,62 +576,25 @@ int main(int argc, char *argv[])
     exit(EXIT_FAILURE);
   }
   
-  /*
-  * Sets up VAO, VBO, and TBO
-  */
-  setupRenderingContext(); 
-  
-  /*
-  * Sets up Model-View-Projection transformation matrix
-  * TODO: Controllable camera
-  */
+  setupRenderingContext();
   LoadMVP();
-
-  /*
-  * Loads the Snow Particles
-  * Fixed amount
-  */
-  LoadPoints(); 
-
-  /*
-  * Sets blending mode for snowflakes
-  * TODO: configure it properly
-  */
+  LoadPoints();
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   while(!glfwWindowShouldClose(window))
   {
-    //Update FPS
     FPS();
-   // getchar();
-    /*
-    * Polls for Mouse & Keyboard Events
-    */
     glfwPollEvents();
     LoadMVP();
-	AdjustPoints();
-
-    /*
-    * Draws scene to screen
-    */
     Render();
-
-    /*
-    * GPU acceleration
-    * Gets back vectors after being transformed by shaders.
-    * TODO: Bounds checking, Particle insertion & deletion, sorting
-    *       (consider OpenCL/CUDA for CPU accelerated inspection)
-    */
-    Feedback(); 
+    Feedback();
 
   }
 
   //Cleanup 
-  glDeleteBuffers(1, &vbo[0]);
-  glDeleteBuffers(1, &vbo[1]);
-  glDeleteVertexArrays(1, &vao[0]);
-  glDeleteVertexArrays(1, &vao[1]);
+  glDeleteBuffers(2, vbo);
+  glDeleteVertexArrays(1, &vao);
   glDeleteProgram(snowProgram);
   glDeleteProgram(backdropProgram);
   glDeleteProgram(floorProgram);

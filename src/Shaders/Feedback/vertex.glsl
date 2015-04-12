@@ -1,14 +1,13 @@
 #version 410 core
 
-in vec3 position;
-in vec3 velocity;
+in vec3 previousPosition;
+in vec3 previousVelocity;
 
 out vec3 nextPosition;
-out vec3 nextVelocity;
 
 void main() {
 
-  nextPosition = position + velocity;
+  nextPosition = previousPosition + previousVelocity;
 
   if (nextPosition.y < -1) {
     nextPosition.y = 1.00;
