@@ -56,6 +56,8 @@ int maxChangePerFrame = 1000;
 bool key_one = true;
 bool key_two = false;
 
+#pragma mark - Shaders
+
 GLuint loadShader(GLenum type, const GLchar *path)
 {
   // For logging purposes...
@@ -205,96 +207,42 @@ GLuint loadShadersVF(const char *vPath, const char *fPath)
 }
 
 
-// Event handler for mouse clicks
-void MouseButton(GLFWwindow * window, int button, int action, int mods)
+#pragma mark - OpenGL
+
+void setupRenderingContext()
 {
-	if (action == GLFW_PRESS) {
-		ScreenLock = true;
-  }
-	if (action == GLFW_RELEASE) {
-		ScreenLock = false;
-    glfwSetCursorPos(window, ScreenWidth/2.0, ScreenHeight/2.0);
-  }
-}
+  //Load vertex, geomtry, and fragment shaders for snow
+  snowProgram = loadShadersVGF("Shaders/Snow/vertex.glsl", "Shaders/Snow/geometry.glsl", "Shaders/Snow/fragment.glsl");
 
+  //for the floor
+  floorProgram = loadShadersVF("Shaders/Floor/vertex.glsl", "Shaders/Floor/fragment.glsl");
 
-// Handler for keeping track of mouse position
-void CursorPos(GLFWwindow * window, double xpos, double ypos)
-{
-	//Check if holding down mouse button
-	if (ScreenLock) {
-	   cameraPhi   +=  0.00005 * (ScreenWidth/2.0 - xpos);
-	   cameraTheta +=  0.00005 * (ScreenHeight/2.0 - ypos);
-	}
-}
+  //Load vertex, and fragment shaders for plane textures
+  backdropProgram = loadShadersVF("Shaders/Backdrop/vertex.glsl", "Shaders/Backdrop/fragment.glsl");
+  glGenTextures(1, &backTID); //load back texture ID
 
+  //Load vertex shader to preform feedback transformations on
+  feedbackProgram = loadFeedbackShader("Shaders/Feedback/vertex.glsl");
+  const GLchar* feedbackVaryings[] = { "nextPosition" };
+  glTransformFeedbackVaryings(feedbackProgram, 1, feedbackVaryings, GL_INTERLEAVED_ATTRIBS);
+  glLinkProgram(feedbackProgram);
 
-// Keyboard callback function.
-static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-    glfwSetWindowShouldClose(window, GL_TRUE);
-  if (key == GLFW_KEY_W && (action == GLFW_PRESS || action == GLFW_REPEAT))
-    cameraPosition += cameraDirection * camera_step;
-  if (key == GLFW_KEY_S && (action == GLFW_PRESS || action == GLFW_REPEAT))
-    cameraPosition -= cameraDirection * camera_step;
-  if (key == GLFW_KEY_A && (action == GLFW_PRESS || action == GLFW_REPEAT))
-    cameraPosition -= cameraRight * camera_step;
-  if (key == GLFW_KEY_D && (action == GLFW_PRESS || action == GLFW_REPEAT))
-    cameraPosition += cameraRight * camera_step;
-  if (key == GLFW_KEY_UP && (action == GLFW_PRESS || action == GLFW_REPEAT))
-    particleCount += particleStep;
-  if (key == GLFW_KEY_DOWN && (action == GLFW_PRESS || action == GLFW_REPEAT))
-    particleCount = std::max(particleCount - particleStep, 0u);
-  if (key == GLFW_KEY_1 && action == GLFW_PRESS)
-      key_one = !key_one;
-  if (key == GLFW_KEY_2 && action == GLFW_PRESS)
-      key_two = !key_two;
-}
+  // Attribute bindings
+  renderPosition = glGetAttribLocation(snowProgram, "position");
+  renderVelocity = glGetAttribLocation(snowProgram, "velocity");
+  renderRotation = glGetAttribLocation(snowProgram, "rotation");
 
+  feedbackPosition = glGetAttribLocation(feedbackProgram, "previousPosition");
+  feedbackVelocity = glGetAttribLocation(feedbackProgram, "previousVelocity");
+  feedbackRotation = glGetAttribLocation(feedbackProgram, "previousRotation");
 
-void Render()
-{
-  glClearColor(0.6f,0.6f,0.6f,0.0f);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  // Generate our vertex array object
+  glGenVertexArrays(1, &snowVAO);
 
-  // Bind the shader program
-  glUseProgram(snowProgram);
-
-  // Bind the VAO
-  glBindVertexArray(snowVAO);
+  // Generate our vertex buffer objects
+  glGenBuffers(2, snowVBO);
   
-  // Render snowflakes to screen
-  glDrawArrays(GL_POINTS, 0, (int)positions.size());
-
-  // Disable the attributes used for rendering
-  glDisableVertexAttribArray(renderPosition);
-  glDisableVertexAttribArray(renderVelocity);
-  
-  // Enable the attributes used for transform feedback
-  glEnableVertexAttribArray(feedbackPosition);
-  glVertexAttribPointer(feedbackPosition, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
-  glEnableVertexAttribArray(feedbackVelocity);
-  glVertexAttribPointer(feedbackVelocity, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)(positions.size() * sizeof(glm::vec3)));
-  
-  // Unbind the VAO
-  glBindVertexArray(0);
-  
-  // Unbind the shader program
-  glUseProgram(0);
-  
-  glfwSwapBuffers(window);
-}
-
-
-// Generates a point within a [-1,1] cube and stuffs it in the points array.
-void GeneratePoint()
-{
-    float x = 1.0f, y = 1.0f, z = 1.0f;
-    x -= (rand() % 200) / 100.0f;
-    y -= (rand() % 200) / 100.0f;
-    z -= (rand() % 200) / 100.0f;
-    positions.push_back(glm::vec3(x, y, z));
+  glEnable(GL_DEPTH_TEST);
 }
 
 
@@ -340,6 +288,40 @@ void LoadPoints()
   glEnableVertexAttribArray(renderVelocity);
   glVertexAttribPointer(renderVelocity, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)(positions.size() * sizeof(glm::vec3)));
   glBindVertexArray(0);
+}
+
+
+void Render()
+{
+  glClearColor(0.6f,0.6f,0.6f,0.0f);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  // Bind the shader program
+  glUseProgram(snowProgram);
+
+  // Bind the VAO
+  glBindVertexArray(snowVAO);
+  
+  // Render snowflakes to screen
+  glDrawArrays(GL_POINTS, 0, (int)positions.size());
+
+  // Disable the attributes used for rendering
+  glDisableVertexAttribArray(renderPosition);
+  glDisableVertexAttribArray(renderVelocity);
+  
+  // Enable the attributes used for transform feedback
+  glEnableVertexAttribArray(feedbackPosition);
+  glVertexAttribPointer(feedbackPosition, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
+  glEnableVertexAttribArray(feedbackVelocity);
+  glVertexAttribPointer(feedbackVelocity, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)(positions.size() * sizeof(glm::vec3)));
+  
+  // Unbind the VAO
+  glBindVertexArray(0);
+  
+  // Unbind the shader program
+  glUseProgram(0);
+  
+  glfwSwapBuffers(window);
 }
 
 
@@ -468,61 +450,75 @@ void LoadTexture(const char* filename, GLuint textureID, GLuint shaderID)
 }
 
 
-void setupRenderingContext()
+#pragma mark - GLFW
+
+
+// Event handler for mouse clicks
+void MouseButton(GLFWwindow * window, int button, int action, int mods)
 {
-  //Load vertex, geomtry, and fragment shaders for snow
-  snowProgram = loadShadersVGF("Shaders/Snow/vertex.glsl", "Shaders/Snow/geometry.glsl", "Shaders/Snow/fragment.glsl");
-
-  //for the floor
-  floorProgram = loadShadersVF("Shaders/Floor/vertex.glsl", "Shaders/Floor/fragment.glsl");
-
-  //Load vertex, and fragment shaders for plane textures
-  backdropProgram = loadShadersVF("Shaders/Backdrop/vertex.glsl", "Shaders/Backdrop/fragment.glsl");
-  glGenTextures(1, &backTID); //load back texture ID
-
-  //Load vertex shader to preform feedback transformations on
-  feedbackProgram = loadFeedbackShader("Shaders/Feedback/vertex.glsl");
-  const GLchar* feedbackVaryings[] = { "nextPosition" };
-  glTransformFeedbackVaryings(feedbackProgram, 1, feedbackVaryings, GL_INTERLEAVED_ATTRIBS);
-  glLinkProgram(feedbackProgram);
-
-  // Attribute bindings
-  renderPosition = glGetAttribLocation(snowProgram, "position");
-  renderVelocity = glGetAttribLocation(snowProgram, "velocity");
-  renderRotation = glGetAttribLocation(snowProgram, "rotation");
-
-  feedbackPosition = glGetAttribLocation(feedbackProgram, "previousPosition");
-  feedbackVelocity = glGetAttribLocation(feedbackProgram, "previousVelocity");
-  feedbackRotation = glGetAttribLocation(feedbackProgram, "previousRotation");
-
-  // Generate our vertex array object
-  glGenVertexArrays(1, &snowVAO);
-
-  // Generate our vertex buffer objects
-  glGenBuffers(2, snowVBO);
-  
-  glEnable(GL_DEPTH_TEST);
+	if (action == GLFW_PRESS) {
+		ScreenLock = true;
+  }
+	if (action == GLFW_RELEASE) {
+		ScreenLock = false;
+    glfwSetCursorPos(window, ScreenWidth/2.0, ScreenHeight/2.0);
+  }
 }
 
-/*
-* Sets window title to FPS
-*/
+
+// Handler for keeping track of mouse position
+void CursorPos(GLFWwindow * window, double xpos, double ypos)
+{
+	//Check if holding down mouse button
+	if (ScreenLock) {
+	   cameraPhi   +=  0.00005 * (ScreenWidth/2.0 - xpos);
+	   cameraTheta +=  0.00005 * (ScreenHeight/2.0 - ypos);
+	}
+}
+
+
+// Keyboard callback function.
+static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+    glfwSetWindowShouldClose(window, GL_TRUE);
+  if (key == GLFW_KEY_W && (action == GLFW_PRESS || action == GLFW_REPEAT))
+    cameraPosition += cameraDirection * camera_step;
+  if (key == GLFW_KEY_S && (action == GLFW_PRESS || action == GLFW_REPEAT))
+    cameraPosition -= cameraDirection * camera_step;
+  if (key == GLFW_KEY_A && (action == GLFW_PRESS || action == GLFW_REPEAT))
+    cameraPosition -= cameraRight * camera_step;
+  if (key == GLFW_KEY_D && (action == GLFW_PRESS || action == GLFW_REPEAT))
+    cameraPosition += cameraRight * camera_step;
+  if (key == GLFW_KEY_UP && (action == GLFW_PRESS || action == GLFW_REPEAT))
+    particleCount += particleStep;
+  if (key == GLFW_KEY_DOWN && (action == GLFW_PRESS || action == GLFW_REPEAT))
+    particleCount = std::max(particleCount - particleStep, 0u);
+  if (key == GLFW_KEY_1 && action == GLFW_PRESS)
+      key_one = !key_one;
+  if (key == GLFW_KEY_2 && action == GLFW_PRESS)
+      key_two = !key_two;
+}
+
+
 void FPS()
 {
 	double elapsed = glfwGetTime() - Timer;
-	if (elapsed > 1.0)
-	{
+	if (elapsed > 1.0) {
 		char title[32];
 		sprintf(title,"Falling Snow, FPS: %0.2f",Frames/elapsed);
 		glfwSetWindowTitle(window,title);
 		Timer = glfwGetTime();
 		Frames = 0;
 	}
-    else
-    {
-        Frames++;
-    }
+    else {
+    Frames++;
+  }
 }
+
+
+#pragma mark - main
+
 
 int main(int argc, char *argv[])
 {
