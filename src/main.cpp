@@ -54,7 +54,7 @@ unsigned int particleStep = 5000;
 int maxChangePerFrame = 1000;
 
 //Scene Toggles
-bool key_one = true;
+bool key_one = false;
 bool key_two = false;
 
 #pragma mark - Shaders
