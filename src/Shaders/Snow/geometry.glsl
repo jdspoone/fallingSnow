@@ -44,23 +44,24 @@ void emitEquilateralTriangle(float radius, float angle, vec4 point) {
 }
 
 
-void kochSnowflake(int level, float radius, float upAngle, vec4 point) {
+void emitSnowflake(int level, float radius, float upAngle, vec4 point) {
 
   switch (level) {
     case 1:
-      emitEquilateralTriangle(radius, -M_PI / 2.0, point);
-      emitEquilateralTriangle(radius, M_PI / 2.0, point);
+      emitEquilateralTriangle(radius, upAngle, point);
+      emitEquilateralTriangle(radius, -upAngle, point);
       break;
 
     default:
-      emitEquilateralTriangle(radius, -M_PI / 2.0, point);
+      emitEquilateralTriangle(radius, upAngle, point);
       break;
   }
 }
+
 
 void main() {
   float radius = 0.001f;
   middle = gl_in[0].gl_Position;
 
-  kochSnowflake(1, radius, -M_PI / 2.0, gl_in[0].gl_Position);
+  emitSnowflake(1, radius, -M_PI / 2.0, gl_in[0].gl_Position);
 }
