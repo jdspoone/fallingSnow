@@ -4,7 +4,6 @@ layout(points) in;
 
 uniform vec3 cameraPosition;
 
-in vec4 outVec[];
 out vec4 position;
 out vec4 middle;
 
@@ -20,7 +19,7 @@ layout(triangle_strip, max_vertices = 6) out;
 
 
 // This function emits an equilateral triangle centered at the given point
-void emitEquilateralTriangle(float radius, float angle, vec4 pointMVP, vec4 pointM) {
+void emitEquilateralTriangle(float radius, float angle, vec4 point) {
 
   mat4 rotationMatrix = mat4(
     cos(angle), -sin(angle), 0, 0,
@@ -29,39 +28,39 @@ void emitEquilateralTriangle(float radius, float angle, vec4 pointMVP, vec4 poin
     0, 0, 0, 1
   );
 
-  gl_Position = pointMVP + (rotationMatrix * vec4(radius * cos(0), radius * sin(0), 0.0, 0.0));
-  position = pointM + (rotationMatrix * vec4(radius * cos(0), radius * sin(0), 0.0, 0.0));
+  gl_Position = point + (rotationMatrix * vec4(radius * cos(0), radius * sin(0), 0.0, 0.0));
+  position = gl_Position;
   EmitVertex();
   
-  gl_Position = pointMVP + (rotationMatrix * vec4(radius * cos(120 * M_PI / 180), radius * sin(120 * M_PI / 180), 0.0, 0.0));
-  position = pointM + (rotationMatrix * vec4(radius * cos(120 * M_PI / 180), radius * sin(120 * M_PI / 180), 0.0, 0.0));
+  gl_Position = point + (rotationMatrix * vec4(radius * cos(120 * M_PI / 180), radius * sin(120 * M_PI / 180), 0.0, 0.0));
+  position = gl_Position;
   EmitVertex();
   
-  gl_Position = pointMVP + (rotationMatrix * vec4(radius * cos(240 * M_PI / 180), radius * sin(240 * M_PI / 180), 0.0, 0.0));
-  position = pointM + (rotationMatrix * vec4(radius * cos(240 * M_PI / 180), radius * sin(240 * M_PI / 180), 0.0, 0.0));
+  gl_Position = point + (rotationMatrix * vec4(radius * cos(240 * M_PI / 180), radius * sin(240 * M_PI / 180), 0.0, 0.0));
+  position = gl_Position;
   EmitVertex();
 
   EndPrimitive();
 }
 
 
-void kochSnowflake(int level, float radius, float upAngle, vec4 pointMVP, vec4 pointM) {
+void kochSnowflake(int level, float radius, float upAngle, vec4 point) {
 
   switch (level) {
     case 1:
-      emitEquilateralTriangle(radius, -M_PI / 2.0, pointMVP, pointM);
-      emitEquilateralTriangle( radius, M_PI / 2.0, pointMVP, pointM);
+      emitEquilateralTriangle(radius, -M_PI / 2.0, point);
+      emitEquilateralTriangle(radius, M_PI / 2.0, point);
       break;
 
     default:
-      emitEquilateralTriangle( radius, -M_PI / 2.0, pointMVP, pointM);
+      emitEquilateralTriangle(radius, -M_PI / 2.0, point);
       break;
   }
 }
 
 void main() {
-  float r = 0.001f; //Radius of snowflake
-  middle = outVec[0];
+  float radius = 0.001f;
+  middle = gl_in[0].gl_Position;
 
-  kochSnowflake(1, r, -M_PI / 2.0, gl_in[0].gl_Position, outVec[0]);
+  kochSnowflake(1, radius, -M_PI / 2.0, gl_in[0].gl_Position);
 }
