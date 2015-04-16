@@ -18,7 +18,7 @@ layout(triangle_strip, max_vertices = 6) out;
 #define M_PI 3.1415926535897932384626433832795
 
 
-// This function emits an equilateral triangle centered at the given point
+// This function emits an equilateral triangle centered at the given point, where the circumscribed circle has the given radius
 void emitEquilateralTriangle(float radius, float angle, vec4 point) {
 
   mat4 rotationMatrix = mat4(
