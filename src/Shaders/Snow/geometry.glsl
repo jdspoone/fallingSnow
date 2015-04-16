@@ -20,7 +20,7 @@ layout(triangle_strip, max_vertices = 6) out;
 
 
 // This function emits an equilateral triangle centered at the given point
-void emitEquilateralTriangle(vec4 pointMVP, vec4 pointM, float radius, float angle) {
+void emitEquilateralTriangle(float radius, float angle, vec4 pointMVP, vec4 pointM) {
 
   mat4 rotationMatrix = mat4(
     cos(angle), -sin(angle), 0, 0,
@@ -45,16 +45,16 @@ void emitEquilateralTriangle(vec4 pointMVP, vec4 pointM, float radius, float ang
 }
 
 
-void kochSnowflake(int level, vec4 pointMVP, vec4 pointM, float radius) {
+void kochSnowflake(int level, float radius, float upAngle, vec4 pointMVP, vec4 pointM) {
 
   switch (level) {
     case 1:
-      emitEquilateralTriangle(pointMVP, pointM, radius, -M_PI / 2.0);
-      emitEquilateralTriangle(pointMVP, pointM, radius, M_PI / 2.0);
+      emitEquilateralTriangle(radius, -M_PI / 2.0, pointMVP, pointM);
+      emitEquilateralTriangle( radius, M_PI / 2.0, pointMVP, pointM);
       break;
 
     default:
-      emitEquilateralTriangle(pointMVP, pointM, radius, -M_PI / 2.0);
+      emitEquilateralTriangle( radius, -M_PI / 2.0, pointMVP, pointM);
       break;
   }
 }
@@ -63,5 +63,5 @@ void main() {
   float r = 0.001f; //Radius of snowflake
   middle = outVec[0];
 
-  kochSnowflake(1, gl_in[0].gl_Position, outVec[0], r);
+  kochSnowflake(1, r, -M_PI / 2.0, gl_in[0].gl_Position, outVec[0]);
 }
