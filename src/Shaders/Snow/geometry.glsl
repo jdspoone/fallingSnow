@@ -28,15 +28,15 @@ void emitEquilateralTriangle(float radius, float angle, vec4 point) {
     0, 0, 0, 1
   );
 
-  gl_Position = point + (rotationMatrix * vec4(radius * cos(0), radius * sin(0), 0.0, 0.0));
+  gl_Position = point + (rotationMatrix * (radius * vec4(cos(0), sin(0), 0.0, 0.0)));
   position = gl_Position;
   EmitVertex();
   
-  gl_Position = point + (rotationMatrix * vec4(radius * cos(120 * M_PI / 180), radius * sin(120 * M_PI / 180), 0.0, 0.0));
+  gl_Position = point + (rotationMatrix * (radius * vec4(cos(120 * M_PI / 180), sin(120 * M_PI / 180), 0.0, 0.0)));
   position = gl_Position;
   EmitVertex();
   
-  gl_Position = point + (rotationMatrix * vec4(radius * cos(240 * M_PI / 180), radius * sin(240 * M_PI / 180), 0.0, 0.0));
+  gl_Position = point + (rotationMatrix * (radius * vec4(cos(240 * M_PI / 180), sin(240 * M_PI / 180), 0.0, 0.0)));
   position = gl_Position;
   EmitVertex();
 
