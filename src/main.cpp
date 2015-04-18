@@ -588,6 +588,11 @@ void CursorPos(GLFWwindow * window, double xpos, double ypos)
 	}
 }
 
+void ResizeWindow(GLFWwindow* window, int width, int height)
+{
+	glViewport(0, 0, width, height);
+}
+
 
 // Keyboard callback function.
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -658,6 +663,7 @@ int main(int argc, char *argv[])
   glfwSetKeyCallback(window, key_callback);
   glfwSetMouseButtonCallback(window, MouseButton);
   glfwSetCursorPosCallback(window, CursorPos);
+  glfwSetWindowSizeCallback(window, ResizeWindow);
 
   // Initialize GLEW
   glewExperimental = GL_TRUE;
