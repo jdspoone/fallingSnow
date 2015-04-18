@@ -16,9 +16,14 @@
 #include <time.h>
 #include "lodepng.h" //Credit: http://lodev.org/lodepng/
 
-#ifdef _WIN32
+#ifdef _WIN32 
 #define M_PI 3.14159265358979323846f
+#define RESIZE 0
+#elif __APPLE__
+#define RESIZE 1
 #endif
+
+
 
 using namespace std;
 
@@ -590,6 +595,8 @@ void CursorPos(GLFWwindow * window, double xpos, double ypos)
 
 void ResizeWindow(GLFWwindow* window, int width, int height)
 {
+    if (RESIZE)
+        glfwGetFramebufferSize(window, &width, &height); //High-res display
 	glViewport(0, 0, width, height);
 }
 
