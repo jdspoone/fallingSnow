@@ -551,7 +551,7 @@ void UpdateMVP()
 
   //Projection
   float fovy = M_PI * 0.25f; //Radians,this is equivalent to 45 degrees
-  float aspect = 1.0f;
+  float aspect = ScreenWidth/ScreenHeight;
   float zNear = 0.0001f;
   float zFar = 100.0f;
   glm::mat4 ProjectionMatrix = glm::perspective(fovy, aspect, zNear, zFar);
@@ -597,7 +597,19 @@ void ResizeWindow(GLFWwindow* window, int width, int height)
 {
     if (RESIZE)
         glfwGetFramebufferSize(window, &width, &height); //High-res display
-	glViewport(0, 0, width, height);
+
+    //Keep 1:1 aspect ratio
+    int minsize = std::min(width, height);
+    //offsets
+    int xoff = width - minsize;
+    int yoff = height - minsize;
+    
+    width = minsize;
+    height = minsize;
+    ScreenWidth = width;
+    ScreenHeight = height;
+
+	glViewport(std::floor(xoff/2.0), std::floor(yoff/2.0), width, height);
 }
 
 
