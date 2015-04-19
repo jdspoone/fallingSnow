@@ -1,3 +1,4 @@
+#pragma once
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
@@ -53,6 +54,11 @@ unsigned int particleCount;
 unsigned int particleStep = 5000;
 int maxChangePerFrame = 1000;
 
+// Wind stuff
+GLuint windTex;
+const int windTexSize = 2048;
+GLfloat wind[windTexSize][windTexSize][3];
+
 //Scene Toggles
 bool key_one = false;
 bool key_two = false;
@@ -82,32 +88,32 @@ GLuint loadShader(GLenum type, const GLchar *path)
   GLuint shader = glCreateShader(type);
   
   // Load the shader code from the given file path
-	std::string shaderCode;
-	std::ifstream shaderStream(path, std::ios::in);
-	if(shaderStream.is_open()) {
+    std::string shaderCode;
+    std::ifstream shaderStream(path, std::ios::in);
+    if(shaderStream.is_open()) {
     std::string Line = "";
     while(getline(shaderStream, Line))
       shaderCode += "\n" + Line;
     shaderStream.close();
-	}
-	else
-		printf("Could not open %s shader file: %s\n", typeName, path);
+    }
+    else
+        printf("Could not open %s shader file: %s\n", typeName, path);
   
-	GLint result = GL_FALSE;
-	int logLength;
+    GLint result = GL_FALSE;
+    int logLength;
   
-	// Compile the shader
-	printf("Compiling %s shader: %s\n", typeName, path);
-	char const * shaderSourcePointer = shaderCode.c_str();
-	glShaderSource(shader, 1, &shaderSourcePointer , NULL);
-	glCompileShader(shader);
+    // Compile the shader
+    printf("Compiling %s shader: %s\n", typeName, path);
+    char const * shaderSourcePointer = shaderCode.c_str();
+    glShaderSource(shader, 1, &shaderSourcePointer , NULL);
+    glCompileShader(shader);
 
-	// Check Vertex Shader
-	glGetShaderiv(shader, GL_COMPILE_STATUS, &result);
-	glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &logLength);
-	std::vector<char> shaderErrorMessage(logLength);
-	glGetShaderInfoLog(shader, logLength, NULL, &shaderErrorMessage[0]);
-	if (logLength > 0)
+    // Check Vertex Shader
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &result);
+    glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &logLength);
+    std::vector<char> shaderErrorMessage(logLength);
+    glGetShaderInfoLog(shader, logLength, NULL, &shaderErrorMessage[0]);
+    if (logLength > 0)
     fprintf(stdout, "Checking %s shader: %s\n", typeName, &shaderErrorMessage[0]);
   
   return shader;
@@ -116,94 +122,94 @@ GLuint loadShader(GLenum type, const GLchar *path)
 
 GLuint loadFeedbackShader(const char *vPath)
 {
-	// Create the shader
-	GLuint vertexID = loadShader(GL_VERTEX_SHADER, vPath);
+    // Create the shader
+    GLuint vertexID = loadShader(GL_VERTEX_SHADER, vPath);
 
-	// Link the program
-	fprintf(stdout, "Linking feedback program\n\n");
-	GLuint programID = glCreateProgram();
-	glAttachShader(programID, vertexID);
-	glLinkProgram(programID);
+    // Link the program
+    fprintf(stdout, "Linking feedback program\n\n");
+    GLuint programID = glCreateProgram();
+    glAttachShader(programID, vertexID);
+    glLinkProgram(programID);
 
-	GLint result = GL_FALSE;
-	int logLength;
+    GLint result = GL_FALSE;
+    int logLength;
 
-	// Check the program
-	glGetProgramiv(programID, GL_LINK_STATUS, &result);
-	glGetProgramiv(programID, GL_INFO_LOG_LENGTH, &logLength);
-	std::vector<char> errorMessage(max(logLength, int(1)));
-	glGetProgramInfoLog(programID, logLength, NULL, &errorMessage[0]);
-	if (logLength > 0)
+    // Check the program
+    glGetProgramiv(programID, GL_LINK_STATUS, &result);
+    glGetProgramiv(programID, GL_INFO_LOG_LENGTH, &logLength);
+    std::vector<char> errorMessage(max(logLength, int(1)));
+    glGetProgramInfoLog(programID, logLength, NULL, &errorMessage[0]);
+    if (logLength > 0)
     fprintf(stdout, "Linking Check: %s\n", &errorMessage[0]);
 
-	glDeleteShader(vertexID);
+    glDeleteShader(vertexID);
 
-	return programID;
+    return programID;
 }
 
 
 GLuint loadShadersVGF(const char *vPath, const char *gPath, const char *fPath)
 {
-	// Create the shaders
-	GLuint vertexID = loadShader(GL_VERTEX_SHADER, vPath);
-	GLuint geometryID = loadShader(GL_GEOMETRY_SHADER, gPath);
-	GLuint fragmentID = loadShader(GL_FRAGMENT_SHADER, fPath);
+    // Create the shaders
+    GLuint vertexID = loadShader(GL_VERTEX_SHADER, vPath);
+    GLuint geometryID = loadShader(GL_GEOMETRY_SHADER, gPath);
+    GLuint fragmentID = loadShader(GL_FRAGMENT_SHADER, fPath);
 
-	// Link the program
-	fprintf(stdout, "Linking Vertex-Geomentry-Fragment program\n\n");
-	GLuint programID = glCreateProgram();
-	glAttachShader(programID, vertexID);
-	glAttachShader(programID, geometryID);
-	glAttachShader(programID, fragmentID);
-	glLinkProgram(programID);
+    // Link the program
+    fprintf(stdout, "Linking Vertex-Geomentry-Fragment program\n\n");
+    GLuint programID = glCreateProgram();
+    glAttachShader(programID, vertexID);
+    glAttachShader(programID, geometryID);
+    glAttachShader(programID, fragmentID);
+    glLinkProgram(programID);
 
-	GLint result = GL_FALSE;
-	int logLength;
+    GLint result = GL_FALSE;
+    int logLength;
 
-	// Check the program
-	glGetProgramiv(programID, GL_LINK_STATUS, &result);
-	glGetProgramiv(programID, GL_INFO_LOG_LENGTH, &logLength);
-	std::vector<char> errorMessage(max(logLength, int(1)));
-	glGetProgramInfoLog(programID, logLength, NULL, &errorMessage[0]);
-	if (logLength > 0)
-	    fprintf(stdout, "Linking Check: %s\n", &errorMessage[0]);
+    // Check the program
+    glGetProgramiv(programID, GL_LINK_STATUS, &result);
+    glGetProgramiv(programID, GL_INFO_LOG_LENGTH, &logLength);
+    std::vector<char> errorMessage(max(logLength, int(1)));
+    glGetProgramInfoLog(programID, logLength, NULL, &errorMessage[0]);
+    if (logLength > 0)
+        fprintf(stdout, "Linking Check: %s\n", &errorMessage[0]);
 
-	glDeleteShader(vertexID);
-	glDeleteShader(geometryID);
-	glDeleteShader(fragmentID);
+    glDeleteShader(vertexID);
+    glDeleteShader(geometryID);
+    glDeleteShader(fragmentID);
 
-	return programID;
+    return programID;
 }
 
 
 GLuint loadShadersVF(const char *vPath, const char *fPath)
 {
-	// Create the shaders
-	GLuint vertexID = loadShader(GL_VERTEX_SHADER, vPath);
-	GLuint fragmentID = loadShader(GL_FRAGMENT_SHADER, fPath);
+    // Create the shaders
+    GLuint vertexID = loadShader(GL_VERTEX_SHADER, vPath);
+    GLuint fragmentID = loadShader(GL_FRAGMENT_SHADER, fPath);
 
-	// Link the program
-	fprintf(stdout, "Linking Vertex-Fragment program\n\n");
-	GLuint programID = glCreateProgram();
-	glAttachShader(programID, vertexID);
-	glAttachShader(programID, fragmentID);
-	glLinkProgram(programID);
+    // Link the program
+    fprintf(stdout, "Linking Vertex-Fragment program\n\n");
+    GLuint programID = glCreateProgram();
+    glAttachShader(programID, vertexID);
+    glAttachShader(programID, fragmentID);
+    glLinkProgram(programID);
 
-	GLint result = GL_FALSE;
-	int logLength;
+    GLint result = GL_FALSE;
+    int logLength;
 
-	// Check the program
-	glGetProgramiv(programID, GL_LINK_STATUS, &result);
-	glGetProgramiv(programID, GL_INFO_LOG_LENGTH, &logLength);
-	std::vector<char> errorMessage(max(logLength, int(1)));
-	glGetProgramInfoLog(programID, logLength, NULL, &errorMessage[0]);
-	if (logLength > 0)
+    // Check the program
+    glGetProgramiv(programID, GL_LINK_STATUS, &result);
+    glGetProgramiv(programID, GL_INFO_LOG_LENGTH, &logLength);
+    std::vector<char> errorMessage(max(logLength, int(1)));
+    glGetProgramInfoLog(programID, logLength, NULL, &errorMessage[0]);
+    if (logLength > 0)
     fprintf(stdout, "Linking Check: %s\n", &errorMessage[0]);
 
-	glDeleteShader(vertexID);
-	glDeleteShader(fragmentID);
+    glDeleteShader(vertexID);
+    glDeleteShader(fragmentID);
 
-	return programID;
+    return programID;
 }
 
 
@@ -212,29 +218,29 @@ GLuint loadShadersVF(const char *vPath, const char *fPath)
 // Loads a PNG from file, and adds info to texture
 void LoadTexture(const char* filename, GLuint textureID, GLuint shaderID)
 {
-	/*
-	* Load Image
-	*/
-	vector<unsigned char> image; //the raw pixels
-  	unsigned width, height;
+    /*
+    * Load Image
+    */
+    vector<unsigned char> image; //the raw pixels
+      unsigned width, height;
 
-  	//decode
-  	unsigned error = lodepng::decode(image, width, height, filename);
-	cout<< filename <<" >> height: "<<height<<", width: "<<width<<endl;
+      //decode
+      unsigned error = lodepng::decode(image, width, height, filename);
+    cout<< filename <<" >> height: "<<height<<", width: "<<width<<endl;
 
-  	//if there's an error, display it
-  	if(error) cout << "decoder error " << error << ": " 
-		<< lodepng_error_text(error) << endl;
-	
-	//Bind
-	glBindTexture(GL_TEXTURE_2D, textureID);
+      //if there's an error, display it
+      if(error) cout << "decoder error " << error << ": " 
+        << lodepng_error_text(error) << endl;
 
-	//Load image into texture
-	glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, &image[0]);
+    //Bind
+    glBindTexture(GL_TEXTURE_2D, textureID);
 
-	//For sampling
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    //Load image into texture
+    glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, &image[0]);
+
+    //For sampling
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
     glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -366,6 +372,43 @@ void setupRenderingContext()
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
+/*
+Generates noise in the provided array.
+*/
+void GenerateNoise(GLfloat*** noise, int size)
+{
+    for (int x = 0; x < size; x++)
+    {
+        for (int y = 0; y < size; y++)
+        {
+            wind[x][y][0] = rand() / (RAND_MAX * -1000.0f);
+            wind[x][y][1] = (rand()) / (RAND_MAX * 1000.0f);
+            wind[x][y][2] = 0.0f;
+        }
+    }
+}
+
+/*
+Sets up the wind texture for use.
+*/
+void SetupWind()
+{
+    glEnable(GL_TEXTURE_2D);
+
+    glGenTextures(1, &windTex);
+
+    GenerateNoise((GLfloat***)wind, windTexSize);
+
+    glBindTexture(GL_TEXTURE_2D, windTex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, windTexSize, windTexSize, 0, GL_RGB, GL_FLOAT, wind);
+
+    //For sampling
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+
 
 void LoadPoints()
 {
@@ -491,6 +534,10 @@ void Feedback()
   // Bind the VAO
   glBindVertexArray(snowVAO);
 
+  //Activate texture
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, windTex);
+
   // Establish the necessary attribute bindings for transform feedback
   glBindBuffer(GL_ARRAY_BUFFER, positionVBO[iteration % 2]);
   glEnableVertexAttribArray(feedbackPosition);
@@ -509,7 +556,7 @@ void Feedback()
   glDrawArrays(GL_POINTS, 0, (int)positions.size());
   glEndTransformFeedback();
   glFlush();
-			
+            
   // Swap the 2 buffers
   std::swap(positionVBO[0], positionVBO[1]);
   std::swap(velocityVBO[0], velocityVBO[1]);
@@ -568,11 +615,11 @@ void UpdateMVP()
 // Event handler for mouse clicks
 void MouseButton(GLFWwindow * window, int button, int action, int mods)
 {
-	if (action == GLFW_PRESS) {
-		ScreenLock = true;
+    if (action == GLFW_PRESS) {
+        ScreenLock = true;
   }
-	if (action == GLFW_RELEASE) {
-		ScreenLock = false;
+    if (action == GLFW_RELEASE) {
+        ScreenLock = false;
     glfwSetCursorPos(window, ScreenWidth/2.0, ScreenHeight/2.0);
   }
 }
@@ -581,16 +628,16 @@ void MouseButton(GLFWwindow * window, int button, int action, int mods)
 // Handler for keeping track of mouse position
 void CursorPos(GLFWwindow * window, double xpos, double ypos)
 {
-	//Check if holding down mouse button
-	if (ScreenLock) {
-	   cameraPhi   +=  0.00005 * (ScreenWidth/2.0 - xpos);
-	   cameraTheta +=  0.00005 * (ScreenHeight/2.0 - ypos);
-	}
+    //Check if holding down mouse button
+    if (ScreenLock) {
+       cameraPhi   +=  0.00005f * (ScreenWidth/2.0 - xpos);
+       cameraTheta +=  0.00005f * (ScreenHeight/2.0 - ypos);
+    }
 }
 
 void ResizeWindow(GLFWwindow* window, int width, int height)
 {
-	glViewport(0, 0, width, height);
+    glViewport(0, 0, width, height);
 }
 
 
@@ -620,14 +667,14 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 
 void FPS()
 {
-	double elapsed = glfwGetTime() - Timer;
-	if (elapsed > 1.0) {
-		char title[32];
-		sprintf(title,"Falling Snow, FPS: %0.2f",Frames/elapsed);
-		glfwSetWindowTitle(window,title);
-		Timer = glfwGetTime();
-		Frames = 0;
-	}
+    double elapsed = glfwGetTime() - Timer;
+    if (elapsed > 1.0) {
+        char title[32];
+        sprintf(title,"Falling Snow, FPS: %0.2f",Frames/elapsed);
+        glfwSetWindowTitle(window,title);
+        Timer = glfwGetTime();
+        Frames = 0;
+    }
     else {
     Frames++;
   }
@@ -674,6 +721,7 @@ int main(int argc, char *argv[])
   }
   
   setupRenderingContext();
+  SetupWind();
   UpdateMVP();
   LoadPoints();
   LoadScenery();
