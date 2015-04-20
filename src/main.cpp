@@ -369,6 +369,22 @@ void setupRenderingContext()
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  
+  // Create uniforms for the unit equilateral triangle, saves work in the geometry shader
+  glUseProgram(snowProgram);
+  
+  glm::vec4 firstTriangleVertex = glm::vec4(cos(0), sin(0), 0.0, 0.0);
+  glm::vec4 secondTriangleVertex = glm::vec4(cos(120 * M_PI / 180), sin(120 * M_PI / 180), 0.0, 0.0);
+  glm::vec4 thirdTriangleVertex = glm::vec4(cos(240 * M_PI / 180), sin(240 * M_PI / 180), 0.0, 0.0);
+
+  GLuint firstTriangleVertexID = glGetUniformLocation(snowProgram, "firstTriangleVertex");
+  glUniform4fv(firstTriangleVertexID, 1, &firstTriangleVertex[0]);
+  GLuint secondTriangleVertexID = glGetUniformLocation(snowProgram, "secondTriangleVertex");
+  glUniform4fv(secondTriangleVertexID, 1, &secondTriangleVertex[0]);
+  GLuint thirdTriangleVertexID = glGetUniformLocation(snowProgram, "thirdTriangleVertex");
+  glUniform4fv(thirdTriangleVertexID, 1, &thirdTriangleVertex[0]);
+  
+  glUseProgram(0);
 }
 
 

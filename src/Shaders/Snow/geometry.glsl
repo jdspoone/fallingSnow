@@ -4,6 +4,10 @@ layout(points) in;
 
 uniform vec3 cameraPosition;
 
+uniform vec4 firstTriangleVertex;
+uniform vec4 secondTriangleVertex;
+uniform vec4 thirdTriangleVertex;
+
 out vec4 position;
 out vec4 middle;
 
@@ -28,15 +32,15 @@ void emitEquilateralTriangle(float radius, float angle, vec4 point) {
     0, 0, 0, 1
   );
 
-  gl_Position = point + (rotationMatrix * (radius * vec4(cos(0), sin(0), 0.0, 0.0)));
+  gl_Position = point + (rotationMatrix * (radius * firstTriangleVertex));
   position = gl_Position;
   EmitVertex();
   
-  gl_Position = point + (rotationMatrix * (radius * vec4(cos(120 * M_PI / 180), sin(120 * M_PI / 180), 0.0, 0.0)));
+  gl_Position = point + (rotationMatrix * (radius * secondTriangleVertex));
   position = gl_Position;
   EmitVertex();
   
-  gl_Position = point + (rotationMatrix * (radius * vec4(cos(240 * M_PI / 180), sin(240 * M_PI / 180), 0.0, 0.0)));
+  gl_Position = point + (rotationMatrix * (radius * thirdTriangleVertex));
   position = gl_Position;
   EmitVertex();
 
