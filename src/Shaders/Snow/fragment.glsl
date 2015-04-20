@@ -7,9 +7,8 @@ out vec4 finalColor;
 
 void main()
 {
-//    // Gaussian Transparency
+    // Gaussian translucency
     float distance = pow(length(middle - position), 0.9);
 
-    //White mode
     finalColor = vec4(1.0f, 1.0f, 1.0f, max(0.5f * (0.002f - distance) / 0.001f, 0.00f));
 }
