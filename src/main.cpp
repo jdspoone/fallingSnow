@@ -56,8 +56,9 @@ int maxChangePerFrame = 1000;
 
 // Wind stuff
 GLuint windTex;
-const int windTexSize = 2048;
+const int windTexSize = 512;
 GLfloat wind[windTexSize][windTexSize][3];
+GLfloat windCopy[windTexSize][windTexSize][3];
 
 //Scene Toggles
 bool key_one = false;
@@ -373,7 +374,7 @@ void setupRenderingContext()
 }
 
 /*
-Generates noise in the provided array.
+Generates random noise in the provided array.
 */
 void GenerateNoise(GLfloat*** noise, int size)
 {
@@ -381,12 +382,66 @@ void GenerateNoise(GLfloat*** noise, int size)
     {
         for (int y = 0; y < size; y++)
         {
-            wind[x][y][0] = rand() / (RAND_MAX * -1000.0f);
-            wind[x][y][1] = (rand()) / (RAND_MAX * 1000.0f);
-            wind[x][y][2] = 0.0f;
+            // Initialize wind texture to random values.
+            wind[x][y][0] = rand() / (float)RAND_MAX * -1.0f;
+            wind[x][y][1] = rand() / (float)RAND_MAX;
+            wind[x][y][2] = rand() / (float)RAND_MAX - 0.5f;
         }
     }
 }
+
+/*
+Smooths the wind field out when zooming in on the texture.
+*/
+float SmoothNoise(float x, float y, int index)
+{
+    // Get the fractional portion to figure out where we are between the values
+    float fractX = x - int(x);
+    float fractY = y - int(y);
+
+    // Wrap around
+    int x1 = int(x);
+    int y1 = int(y);
+    int x2 = x1 == 0 ? windTexSize - 1 : x1 - 1;
+    int y2 = y1 == 0 ? windTexSize - 1 : y1 - 1;
+
+    // Interpolate between the values;
+    float value = 0.0f;
+    value += fractX * fractY * wind[x1][y1][index];
+    value += fractX * (1 - fractY) * wind[x1][y2][index];
+    value += (1 - fractX) * fractY * wind[x2][y1][index];
+    value += (1 - fractX) * (1 - fractY) * wind[x2][y2][index];
+
+    return value;
+}
+
+/*
+Adds together several zoomed-in versions of the wind texture.
+*/
+void Turbulence(float size)
+{
+    float value = 0.0f, startSize = size;
+
+    for (int x = 0; x < windTexSize; x++)
+    {
+        for (int y = 0; y < windTexSize; y++)
+        {
+            // Do this for each x,y,z value
+            for (int i = 0; i < 3; i++)
+            {
+                size = startSize;
+                value = 0.0f;
+                while (size >= 1)
+                {
+                    value += SmoothNoise(x / size, y / size, i) * size;
+                    size /= 2.0f;
+                }
+                windCopy[x][y][i] = value / (startSize * 2.0f);
+            }
+        }
+    }
+}
+
 
 /*
 Sets up the wind texture for use.
@@ -398,6 +453,7 @@ void SetupWind()
     glGenTextures(1, &windTex);
 
     GenerateNoise((GLfloat***)wind, windTexSize);
+    Turbulence(512.0f);
 
     glBindTexture(GL_TEXTURE_2D, windTex);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, windTexSize, windTexSize, 0, GL_RGB, GL_FLOAT, wind);
