@@ -16,9 +16,14 @@
 #include <time.h>
 #include "lodepng.h" //Credit: http://lodev.org/lodepng/
 
-#ifdef _WIN32
+#ifdef _WIN32 
 #define M_PI 3.14159265358979323846f
+#define RESIZE 0
+#elif __APPLE__
+#define RESIZE 1
 #endif
+
+
 
 using namespace std;
 
@@ -544,7 +549,7 @@ void UpdateMVP()
 
   //Projection
   float fovy = M_PI * 0.25f; //Radians,this is equivalent to 45 degrees
-  float aspect = 1.0f;
+  float aspect = ScreenWidth/ScreenHeight;
   float zNear = 0.0001f;
   float zFar = 100.0f;
   glm::mat4 ProjectionMatrix = glm::perspective(fovy, aspect, zNear, zFar);
@@ -588,7 +593,21 @@ void CursorPos(GLFWwindow * window, double xpos, double ypos)
 
 void ResizeWindow(GLFWwindow* window, int width, int height)
 {
-	glViewport(0, 0, width, height);
+    if (RESIZE)
+        glfwGetFramebufferSize(window, &width, &height); //High-res display
+
+    //Keep 1:1 aspect ratio
+    int minsize = std::min(width, height);
+    //offsets
+    int xoff = width - minsize;
+    int yoff = height - minsize;
+    
+    width = minsize;
+    height = minsize;
+    ScreenWidth = width;
+    ScreenHeight = height;
+
+	glViewport(std::floor(xoff/2.0), std::floor(yoff/2.0), width, height);
 }
 
 

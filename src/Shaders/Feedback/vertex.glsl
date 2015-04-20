@@ -13,7 +13,7 @@ void main() {
   if (nextPosition.y < 0) {
     nextPosition.y = 1.00;
   }
-  
+ 
   nextVelocity = previousVelocity;
 }
 
