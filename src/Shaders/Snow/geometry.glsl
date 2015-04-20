@@ -47,6 +47,10 @@ void emitEquilateralTriangle(float radius, float angle, vec4 point) {
   EndPrimitive();
 }
 
+/*
+ *  As it turns out, you cannot do recursive calls in the geometry shader
+ *  Fancy snowflake shapes will have to be generated iteratively
+ */
 
 void emitSnowflake(int level, float radius, float upAngle, vec4 point) {
 
