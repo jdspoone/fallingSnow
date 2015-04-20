@@ -236,9 +236,9 @@ void LoadTexture(const char* filename, GLuint textureID, GLuint shaderID)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-    glBindTexture(GL_TEXTURE_2D, 0);
-
+  glBindTexture(GL_TEXTURE_2D, 0);
 }
+
 
 class GLobject
 {
@@ -251,6 +251,7 @@ public:
     }
     glm::vec3 position, normal, texture;
 }; 
+
 
 //Creates a VAO from GLobject data
 GLuint CreateVAO3( vector < GLobject > data, GLuint shader)
@@ -284,9 +285,9 @@ GLuint CreateVAO3( vector < GLobject > data, GLuint shader)
     return vertexArrayID;
 }
 
+
 void LoadScenery()
 {
-
   //Load Shader
   sceneProgram = loadShadersVF("Shaders/Scene/vertex.glsl", "Shaders/Scene/fragment.glsl");
 
@@ -331,7 +332,6 @@ void LoadScenery()
   floor.push_back(P5);
 
   floorVAO = CreateVAO3(floor, sceneProgram);
-
 }
 
 void setupRenderingContext()
@@ -405,7 +405,6 @@ void LoadPoints()
 
 void RenderScene()
 {
-
   // Bind the shader program
   glUseProgram(sceneProgram);
 
@@ -428,9 +427,8 @@ void RenderScene()
   
   // Unbind the shader program
   glUseProgram(0);
-
-
 }
+
 
 void RenderSnow() {
   // Bind the shader program
