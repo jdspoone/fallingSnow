@@ -33,10 +33,9 @@ double Timer = glfwGetTime();
 glm::mat4 MVP;
 vector<glm::vec3> positions;
 vector<glm::vec3> velocities;
-vector<GLfloat> rotationAngles;
 GLuint snowProgram, feedbackProgram, sceneProgram;
-GLuint renderPosition, renderVelocity, renderRotation;
-GLuint feedbackPosition, feedbackVelocity, feedbackRotation;
+GLuint renderPosition, renderVelocity;
+GLuint feedbackPosition, feedbackVelocity;
 GLuint snowVAO, floorVAO;
 GLuint positionVBO[2];
 GLuint velocityVBO[2];
@@ -353,11 +352,9 @@ void setupRenderingContext()
   // Attribute bindings
   renderPosition = glGetAttribLocation(snowProgram, "position");
   renderVelocity = glGetAttribLocation(snowProgram, "velocity");
-  renderRotation = glGetAttribLocation(snowProgram, "rotation");
 
   feedbackPosition = glGetAttribLocation(feedbackProgram, "previousPosition");
   feedbackVelocity = glGetAttribLocation(feedbackProgram, "previousVelocity");
-  feedbackRotation = glGetAttribLocation(feedbackProgram, "previousRotation");
 
   // Generate our vertex array object
   glGenVertexArrays(1, &snowVAO);
