@@ -50,7 +50,7 @@ GLfloat cameraTheta, cameraPhi = 0.0f;
 bool ScreenLock = false;
 int ScreenWidth, ScreenHeight;
 
-unsigned int particleCount;
+unsigned int particleCount = 300000;
 unsigned int particleStep = 5000;
 int maxChangePerFrame = 1000;
 
@@ -378,6 +378,7 @@ Generates random noise in the provided array.
 */
 void GenerateNoise(GLfloat*** noise, int size)
 {
+	srand((unsigned int)time(NULL));
     for (int x = 0; x < size; x++)
     {
         for (int y = 0; y < size; y++)
@@ -466,7 +467,7 @@ void SetupWind()
     glGenTextures(1, &windTex);
 
     GenerateNoise((GLfloat***)wind, windTexSize);
-    Turbulence(64.0f);
+    Turbulence(8.0f);
 
 	glBindTexture(GL_TEXTURE_3D, windTex);
 	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB32F, windTexSize, windTexSize, windTexSize, 
@@ -483,21 +484,17 @@ void SetupWind()
 void LoadPoints()
 {
   //Create Points
-  float x,y,z = 1.0f;
+  float x,y,z;
   /* initialize random seed: */
   srand ((unsigned int)time(NULL));
-  for (float k = -1; k <= 1; k+= 0.03f)
-    for (float i = -1; i <= 1; i+= 0.03f)
-      for (float j = -1; j <= 1; j+= 0.03f) {
-        // Generate numbers in the range of 0.09 to 0.18, then offset by k/i for
-        // final numbers in the range -0.91 to 1.18
-        x = ((rand() % 10 + 9)/100.0f) + k; 
-        y = ((rand() % 10 + 9)/100.0f) + i; 
-        // Range is -0.94 to 1.15
-        z = ((rand() % 10 + 6)/100.0f) + j;
+  for (int i = positions.size(); i < particleCount; i++)
+  {
+        x = (rand() / (float)RAND_MAX - 0.5f) * 2; 
+        y = rand() / (float)RAND_MAX; 
+		z = (rand() / (float)RAND_MAX - 0.5f) * 2;
         positions.push_back(glm::vec3(x,y,z));
         velocities.push_back(glm::vec3(0.0, -0.0001, 0.0));
-      }
+  }
   
   particleCount = (unsigned int)positions.size();
   cout <<"Particle Count: " << particleCount << endl;
@@ -620,6 +617,8 @@ void Feedback()
   // Re-bind our output VBO
   glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, positionVBO[(iteration + 1) % 2]);
   glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, velocityVBO[(iteration + 1) % 2]);
+
+  glUniform1f(glGetUniformLocation(feedbackProgram, "numParticles"), positions.size());
 
   // Perform the feedback transform
   glBeginTransformFeedback(GL_POINTS);

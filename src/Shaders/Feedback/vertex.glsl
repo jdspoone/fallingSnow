@@ -7,6 +7,7 @@ out vec3 nextPosition;
 out vec3 nextVelocity;
 
 uniform sampler3D windTex;
+uniform float numParticles = 1;
 
 void main() {
   // Put the texture index into the range [0, 1]
@@ -17,7 +18,7 @@ void main() {
 
   // Calculate the next velocity by interpolating between the previous velocity and the new one.
   nextVelocity = texture(windTex, index).xyz / 1000.0;
-  nextVelocity = mix(nextVelocity, previousVelocity, 0.95);
+  nextVelocity = mix(nextVelocity, previousVelocity, gl_VertexID / numParticles);
 
   // Where the particle will be for the next draw call.
   nextPosition = previousPosition - previousVelocity;
