@@ -663,7 +663,7 @@ void Feedback()
   glEnableVertexAttribArray(feedbackAngle);
   glVertexAttribPointer(feedbackAngle, 1, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
 
-  // Re-bind our output VBOs
+  // Bind the output VBOs
   glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, positionVBO[(iteration + 1) % 2]);
   glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, velocityVBO[(iteration + 1) % 2]);
   glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 2, angleVBO[(iteration + 1) % 2]);
@@ -676,7 +676,7 @@ void Feedback()
   glEndTransformFeedback();
   glFlush();
 			
-  // Swap the 2 buffers
+  // Swap the various vertex buffers
   std::swap(positionVBO[0], positionVBO[1]);
   std::swap(velocityVBO[0], velocityVBO[1]);
   std::swap(angleVBO[0], angleVBO[1]);
