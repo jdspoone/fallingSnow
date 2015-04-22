@@ -6,13 +6,14 @@ in vec3 previousVelocity;
 out vec3 nextPosition;
 out vec3 nextVelocity;
 
-uniform sampler2D windTex;
+uniform sampler3D windTex;
 
 void main() {
   // Put the texture index into the range [0, 1]
-  vec2 index = previousPosition.xz;
+  vec3 index = previousPosition.xzy;
   index.x = (index.x + 1.0) / 2.0;
   index.y = (index.y + 1.0) / 2.0;
+  index.z = (index.z + 1.0) / 2.0;
 
   // Calculate the next velocity by interpolating between the previous velocity and the new one.
   nextVelocity = texture(windTex, index).xyz / 1000.0;
