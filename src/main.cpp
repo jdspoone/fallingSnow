@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
+#include <random>
 #include <fstream>
 #include <string>
 #include <vector>
@@ -389,27 +390,40 @@ void setupRenderingContext()
   glUseProgram(0);
 }
 
-
 void LoadPoints()
 {
   //Create Points
   float x,y,z = 1.0f;
   /* initialize random seed: */
   srand ((unsigned int)time(NULL));
-  for (float k = -1; k <= 1; k+= 0.03f)
-    for (float i = -1; i <= 1; i+= 0.03f)
-      for (float j = -1; j <= 1; j+= 0.03f) {
-        // Generate numbers in the range of 0.09 to 0.18, then offset by k/i for
-        // final numbers in the range -0.91 to 1.18
-        x = ((rand() % 10 + 9)/100.0f) + k; 
-        y = ((rand() % 10 + 9)/100.0f) + i; 
-        // Range is -0.94 to 1.15
-        z = ((rand() % 10 + 6)/100.0f) + j;
+  float b = 0.5;    //Boundary
+  int nrolls = 100; //Number of passes
+  int npoints = 95; //Number of points
+  std::default_random_engine generator;
+  std::uniform_real_distribution<double> distribution(-b,b);
+  for (int k = 0; k <= nrolls; ++k)
+  {  
+  for (int i = 0; i <= nrolls; ++i)
+    {
+      for (int j = 0; j <= nrolls; ++j)
+      {
+        x = distribution(generator);
+        y = distribution(generator);
+        z = distribution(generator);
+        y += 0.5; //since shader loops at y = 0 
+ 
         positions.push_back(glm::vec3(x,y,z));
         velocities.push_back(glm::vec3(0.0, -0.0001, 0.0));
         angles.push_back(90);
       }
+    }
+   cout<<"k: "<<k<<endl;
+   }
   
+  //Then jitter points with a LDS sequence for pseudo-randomness
+  //Jittery jitter jitter jitter
+  //TODO: implement jitter if neccessary
+
   particleCount = (unsigned int)positions.size();
   cout <<"Particle Count: " << particleCount << endl;
   
