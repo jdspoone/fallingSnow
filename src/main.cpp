@@ -529,7 +529,7 @@ void LoadPoints()
         y /= 2.0f;    // drop back into range of [0..1]
  
         positions.push_back(glm::vec3(x,y,z));
-        velocities.push_back(glm::vec3(0.0, -0.0001, 0.0));
+        velocities.push_back(glm::vec3(0.0, 0.0001, 0.0));
         angles.push_back(rand() % 90);
       }
     }
