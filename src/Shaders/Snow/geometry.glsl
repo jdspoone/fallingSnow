@@ -2,6 +2,7 @@
 
 layout(points) in;
 
+// Note: Input to the geometry shader must be treated as an array.
 in float angleDegrees[];
 
 uniform vec4 firstTriangleVertex;
