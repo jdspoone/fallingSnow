@@ -6,7 +6,7 @@ layout(location = 2) in vec3 texture;
 
 out vec3 v;
 out vec3 tex;
-out vec3 n = normal;
+out vec3 n;
  
 uniform mat4 MVP;
  
