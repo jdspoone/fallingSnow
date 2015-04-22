@@ -513,15 +513,12 @@ void LoadPoints()
 
   float b = 1.0f;    //Boundary
   int nrolls = 100; //Number of passes
-  int npoints = 95; //Number of points
+  
   std::default_random_engine generator;
   std::uniform_real_distribution<float> distribution(-b,b);
-  for (int k = 0; k <= nrolls; ++k)
-  {  
-  for (int i = 0; i <= nrolls; ++i)
-    {
-      for (int j = 0; j <= nrolls; ++j)
-      {
+  for (int k = 0; k <= nrolls; ++k) {
+    for (int i = 0; i <= nrolls; ++i) {
+      for (int j = 0; j <= nrolls; ++j) {
         x = distribution(generator);
         y = distribution(generator);
         z = distribution(generator);
@@ -533,13 +530,8 @@ void LoadPoints()
         angles.push_back(rand() % 90);
       }
     }
-   cout<<"k: "<<k<<endl;
-   }
+  }
   
-  //Then jitter points with a LDS sequence for pseudo-randomness
-  //Jittery jitter jitter jitter
-  //TODO: implement jitter if neccessary
-
   particleCount = (unsigned int)positions.size();
   cout <<"Particle Count: " << particleCount << endl;
   
