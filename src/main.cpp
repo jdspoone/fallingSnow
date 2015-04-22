@@ -33,12 +33,14 @@ double Timer = glfwGetTime();
 glm::mat4 MVP;
 vector<glm::vec3> positions;
 vector<glm::vec3> velocities;
+vector<GLfloat> angles;
 GLuint snowProgram, feedbackProgram, sceneProgram;
-GLuint renderPosition, renderVelocity;
+GLuint renderPosition, renderVelocity, renderAngle;
 GLuint feedbackPosition, feedbackVelocity;
 GLuint snowVAO, floorVAO;
 GLuint positionVBO[2];
 GLuint velocityVBO[2];
+GLuint angleVBO[2];
 GLuint floorTID;
 
 unsigned int iteration = 0;
@@ -352,6 +354,7 @@ void setupRenderingContext()
   // Attribute bindings
   renderPosition = glGetAttribLocation(snowProgram, "position");
   renderVelocity = glGetAttribLocation(snowProgram, "velocity");
+  renderAngle = glGetAttribLocation(snowProgram, "angle");
 
   feedbackPosition = glGetAttribLocation(feedbackProgram, "previousPosition");
   feedbackVelocity = glGetAttribLocation(feedbackProgram, "previousVelocity");
@@ -362,6 +365,7 @@ void setupRenderingContext()
   // Generate our vertex buffer objects
   glGenBuffers(2, positionVBO);
   glGenBuffers(2, velocityVBO);
+  glGenBuffers(2, angleVBO);
   
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_BLEND);
@@ -402,6 +406,7 @@ void LoadPoints()
         z = ((rand() % 10 + 6)/100.0f) + j;
         positions.push_back(glm::vec3(x,y,z));
         velocities.push_back(glm::vec3(0.0, -0.0001, 0.0));
+        angles.push_back(90);
       }
   
   particleCount = (unsigned int)positions.size();
@@ -418,6 +423,12 @@ void LoadPoints()
   for (int i = 0; i < 2; ++i) {
     glBindBuffer(GL_ARRAY_BUFFER, velocityVBO[i]);
     glBufferData(GL_ARRAY_BUFFER, velocities.size() * sizeof(glm::vec3), &velocities[0][0], GL_DYNAMIC_DRAW);
+  }
+  
+  // Allocate and initialize the angle vertex buffer
+  for (int i = 0; i < 2; ++i) {
+    glBindBuffer(GL_ARRAY_BUFFER, angleVBO[i]);
+    glBufferData(GL_ARRAY_BUFFER, angles.size() * sizeof(GLfloat), &angles[0], GL_DYNAMIC_DRAW);
   }
 }
 
@@ -467,6 +478,10 @@ void RenderSnow() {
   glBindBuffer(GL_ARRAY_BUFFER, velocityVBO[iteration % 2]);
   glEnableVertexAttribArray(renderVelocity);
   glVertexAttribPointer(renderVelocity, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
+
+  glBindBuffer(GL_ARRAY_BUFFER, angleVBO[iteration % 2]);
+  glEnableVertexAttribArray(renderAngle);
+  glVertexAttribPointer(renderAngle, 1, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
   
   // Render snowflakes to screen
   glDrawArrays(GL_POINTS, 0, (int)positions.size());
@@ -474,6 +489,7 @@ void RenderSnow() {
   // Disable the attributes used for rendering
   glDisableVertexAttribArray(renderPosition);
   glDisableVertexAttribArray(renderVelocity);
+  glDisableVertexAttribArray(renderAngle);
 
   // Unbind the VAO
   glBindVertexArray(0);
@@ -719,6 +735,7 @@ int main(int argc, char *argv[])
   //Cleanup 
   glDeleteBuffers(2, positionVBO);
   glDeleteBuffers(2, velocityVBO);
+  glDeleteBuffers(2, angleVBO);
   glDeleteVertexArrays(1, &snowVAO);
   glDeleteProgram(snowProgram);
   glDeleteProgram(sceneProgram);
