@@ -1,3 +1,4 @@
+#pragma once
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
@@ -56,9 +57,15 @@ GLfloat cameraTheta, cameraPhi = 0.0f;
 bool ScreenLock = false;
 int ScreenWidth, ScreenHeight;
 
-unsigned int particleCount;
+unsigned int particleCount = 300000;
 unsigned int particleStep = 5000;
 int maxChangePerFrame = 1000;
+
+// Wind stuff
+GLuint windTex;
+const int windTexSize = 128;
+GLfloat wind[windTexSize][windTexSize][windTexSize][3];
+GLfloat windCopy[windTexSize][windTexSize][windTexSize][3];
 
 //Scene Toggles
 bool key_one = false;
@@ -389,17 +396,126 @@ void setupRenderingContext()
   glUseProgram(0);
 }
 
+/*
+Generates random noise in the provided array.
+*/
+void GenerateNoise(GLfloat*** noise, int size)
+{
+    srand((unsigned int)time(NULL));
+    for (int x = 0; x < size; x++)
+    {
+        for (int y = 0; y < size; y++)
+        {
+            for (int z = 0; z < size; z++)
+            {
+                // Initialize wind texture to random values.
+                wind[x][y][z][0] = rand() / (float)RAND_MAX * -1.0f;
+                wind[x][y][z][1] = rand() / (float)RAND_MAX;
+                wind[x][y][z][2] = rand() / (float)RAND_MAX - 0.5f;
+            }
+        }
+    }
+}
+
+/*
+Smooths the wind field out when zooming in on the texture.
+*/
+float SmoothNoise(float x, float y, float z, int index)
+{
+    // Get the fractional portion to figure out where we are between the values
+    float fractX = x - int(x);
+    float fractY = y - int(y);
+    float fractZ = z - int(z);
+
+    // Wrap around
+    int x1 = int(x);
+    int y1 = int(y);
+    int z1 = int(z);
+    int x2 = x1 == 0 ? windTexSize - 1 : x1 - 1;
+    int y2 = y1 == 0 ? windTexSize - 1 : y1 - 1;
+    int z2 = z1 == 0 ? windTexSize - 1 : z1 - 1;
+
+    // Interpolate between the values;
+    float value = 0.0f;
+    value += fractX * fractY * fractZ * wind[x1][y1][z1][index];
+    value += fractX * (1 - fractY) * fractZ * wind[x1][y2][z1][index];
+    value += (1 - fractX) * fractY * fractZ * wind[x2][y1][z1][index];
+    value += (1 - fractX) * (1 - fractY) * fractZ * wind[x2][y2][z1][index];
+    value += fractX * fractY * (1 - fractZ) * wind[x1][y1][z2][index];
+    value += fractX * (1 - fractY) * (1 - fractZ) * wind[x1][y2][z2][index];
+    value += (1 - fractX) * fractY * (1 - fractZ) * wind[x2][y1][z2][index];
+    value += (1 - fractX) * (1 - fractY) * (1 - fractZ) * wind[x2][y2][z2][index];
+
+    return value;
+}
+
+/*
+Adds together several zoomed-in versions of the wind texture.
+*/
+void Turbulence(float size)
+{
+    float value = 0.0f, startSize = size;
+
+    for (int x = 0; x < windTexSize; x++)
+    {
+        for (int y = 0; y < windTexSize; y++)
+        {
+            for (int z = 0; z < windTexSize; z++)
+            {
+                // Do this for each x,y,z value
+                for (int i = 0; i < 3; i++)
+                {
+                    size = startSize;
+                    value = 0.0f;
+                    while (size >= 1)
+                    {
+                        value += SmoothNoise(x / size, y / size, z / size, i) * size;
+                        size /= 2.0f;
+                    }
+                    windCopy[x][y][z][i] = value / (startSize * 2.0f);
+                }
+            }
+        }
+    }
+}
+
+
+/*
+Sets up the wind texture for use.
+*/
+void SetupWind()
+{
+    glEnable(GL_TEXTURE_3D);
+
+    glGenTextures(1, &windTex);
+
+    GenerateNoise((GLfloat***)wind, windTexSize);
+    Turbulence(8.0f);
+
+    glBindTexture(GL_TEXTURE_3D, windTex);
+    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB32F, windTexSize, windTexSize, windTexSize, 
+        0, GL_RGB, GL_FLOAT, windCopy);
+
+    //For sampling
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+    glBindTexture(GL_TEXTURE_3D, 0);
+}
+
+
 void LoadPoints()
 {
   //Create Points
-  float x,y,z = 1.0f;
+  float x,y,z;
   /* initialize random seed: */
   srand ((unsigned int)time(NULL));
-  float b = 0.5;    //Boundary
+
+  float b = 1.0f;    //Boundary
   int nrolls = 100; //Number of passes
   int npoints = 95; //Number of points
   std::default_random_engine generator;
-  std::uniform_real_distribution<double> distribution(-b,b);
+  std::uniform_real_distribution<float> distribution(-b,b);
   for (int k = 0; k <= nrolls; ++k)
   {  
   for (int i = 0; i <= nrolls; ++i)
@@ -409,7 +525,8 @@ void LoadPoints()
         x = distribution(generator);
         y = distribution(generator);
         z = distribution(generator);
-        y += 0.5; //since shader loops at y = 0 
+        y += 1.0f;    // y should be positive
+        y /= 2.0f;    // drop back into range of [0..1]
  
         positions.push_back(glm::vec3(x,y,z));
         velocities.push_back(glm::vec3(0.0, -0.0001, 0.0));
@@ -537,6 +654,10 @@ void Feedback()
   // Bind the VAO
   glBindVertexArray(snowVAO);
 
+  //Activate texture
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_3D, windTex);
+
   // Establish the necessary attribute bindings for transform feedback
   glBindBuffer(GL_ARRAY_BUFFER, positionVBO[iteration % 2]);
   glEnableVertexAttribArray(feedbackPosition);
@@ -554,6 +675,8 @@ void Feedback()
   glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, positionVBO[(iteration + 1) % 2]);
   glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, velocityVBO[(iteration + 1) % 2]);
   glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 2, angleVBO[(iteration + 1) % 2]);
+
+  glUniform1f(glGetUniformLocation(feedbackProgram, "numParticles"), (float)positions.size());
 
   // Perform the feedback transform
   glBeginTransformFeedback(GL_POINTS);
@@ -599,7 +722,7 @@ void UpdateMVP()
 
   //Projection
   float fovy = M_PI * 0.25f; //Radians,this is equivalent to 45 degrees
-  float aspect = ScreenWidth/ScreenHeight;
+  float aspect = ScreenWidth/(float)ScreenHeight;
   float zNear = 0.0001f;
   float zFar = 100.0f;
   glm::mat4 ProjectionMatrix = glm::perspective(fovy, aspect, zNear, zFar);
@@ -658,7 +781,7 @@ void ResizeWindow(GLFWwindow* window, int width, int height)
     ScreenWidth = width;
     ScreenHeight = height;
 
-	glViewport(std::floor(xoff/2.0), std::floor(yoff/2.0), width, height);
+    glViewport((int)(xoff/2.0), (int)(yoff/2.0), width, height);
 }
 
 
@@ -742,6 +865,7 @@ int main(int argc, char *argv[])
   }
   
   setupRenderingContext();
+  SetupWind();
   UpdateMVP();
   LoadPoints();
   LoadScenery();
