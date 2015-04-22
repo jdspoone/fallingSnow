@@ -23,14 +23,13 @@ void main() {
   nextVelocity = mix(nextVelocity, previousVelocity, gl_VertexID / numParticles);
 
   // Where the particle will be for the next draw call.
-  nextPosition = previousPosition - previousVelocity;
-
-  nextAngle = previousAngle + 1;
+  nextPosition = previousPosition - nextVelocity;
+  nextAngle = previousAngle + length(10000 * nextVelocity);
+  nextVelocity = previousVelocity;
 
   // Loop particles if they're out of range.
   if (nextPosition.y < 0) {
     nextPosition.y = 1.00;
-	nextVelocity = vec3(0.0);
   }
   if (nextPosition.x < -1.0) {
     nextPosition.x += 2.0;

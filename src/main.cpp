@@ -517,7 +517,7 @@ void LoadPoints()
   int nrolls = 100; //Number of passes
   int npoints = 95; //Number of points
   std::default_random_engine generator;
-  std::uniform_real_distribution<double> distribution(-b,b);
+  std::uniform_real_distribution<float> distribution(-b,b);
   for (int k = 0; k <= nrolls; ++k)
   {  
   for (int i = 0; i <= nrolls; ++i)
@@ -527,10 +527,11 @@ void LoadPoints()
         x = distribution(generator);
         y = distribution(generator);
         z = distribution(generator);
-        y += 0.5; //since shader loops at y = 0 
+		y += 1.0f;	// y should be positive
+		y /= 2.0f;	// drop back into range of [0..1]
  
         positions.push_back(glm::vec3(x,y,z));
-        velocities.push_back(glm::vec3(0.0, -0.0001, 0.0));
+        velocities.push_back(glm::vec3(0.0, 0.0001, 0.0));
         angles.push_back(90);
       }
     }
@@ -677,7 +678,7 @@ void Feedback()
   glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, velocityVBO[(iteration + 1) % 2]);
   glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 2, angleVBO[(iteration + 1) % 2]);
 
-  glUniform1f(glGetUniformLocation(feedbackProgram, "numParticles"), positions.size());
+  glUniform1f(glGetUniformLocation(feedbackProgram, "numParticles"), (float)positions.size());
 
   // Perform the feedback transform
   glBeginTransformFeedback(GL_POINTS);
@@ -723,7 +724,7 @@ void UpdateMVP()
 
   //Projection
   float fovy = M_PI * 0.25f; //Radians,this is equivalent to 45 degrees
-  float aspect = ScreenWidth/ScreenHeight;
+  float aspect = ScreenWidth/(float)ScreenHeight;
   float zNear = 0.0001f;
   float zFar = 100.0f;
   glm::mat4 ProjectionMatrix = glm::perspective(fovy, aspect, zNear, zFar);
@@ -760,8 +761,8 @@ void CursorPos(GLFWwindow * window, double xpos, double ypos)
 {
     //Check if holding down mouse button
     if (ScreenLock) {
-       cameraPhi   +=  0.00005f * (ScreenWidth/2.0 - xpos);
-       cameraTheta +=  0.00005f * (ScreenHeight/2.0 - ypos);
+       cameraPhi   +=  0.00005f * (ScreenWidth/2.0f - (float)xpos);
+       cameraTheta +=  0.00005f * (ScreenHeight/2.0f - (float)ypos);
     }
 }
 
@@ -782,7 +783,7 @@ void ResizeWindow(GLFWwindow* window, int width, int height)
     ScreenWidth = width;
     ScreenHeight = height;
 
-	glViewport(std::floor(xoff/2.0), std::floor(yoff/2.0), width, height);
+	glViewport((int)(xoff/2.0), (int)(yoff/2.0), width, height);
 }
 
 
@@ -815,7 +816,7 @@ void FPS()
     double elapsed = glfwGetTime() - Timer;
     if (elapsed > 1.0) {
         char title[32];
-        sprintf(title,"Falling Snow, FPS: %0.2f",Frames/elapsed);
+        sprintf_s(title,"Falling Snow, FPS: %0.2f",Frames/elapsed);
         glfwSetWindowTitle(window,title);
         Timer = glfwGetTime();
         Frames = 0;
