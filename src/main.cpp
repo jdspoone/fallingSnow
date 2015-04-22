@@ -403,18 +403,18 @@ Generates random noise in the provided array.
 */
 void GenerateNoise(GLfloat*** noise, int size)
 {
-	srand((unsigned int)time(NULL));
+    srand((unsigned int)time(NULL));
     for (int x = 0; x < size; x++)
     {
         for (int y = 0; y < size; y++)
         {
-			for (int z = 0; z < size; z++)
-			{
-				// Initialize wind texture to random values.
-				wind[x][y][z][0] = rand() / (float)RAND_MAX * -1.0f;
-				wind[x][y][z][1] = rand() / (float)RAND_MAX;
-				wind[x][y][z][2] = rand() / (float)RAND_MAX - 0.5f;
-			}
+            for (int z = 0; z < size; z++)
+            {
+                // Initialize wind texture to random values.
+                wind[x][y][z][0] = rand() / (float)RAND_MAX * -1.0f;
+                wind[x][y][z][1] = rand() / (float)RAND_MAX;
+                wind[x][y][z][2] = rand() / (float)RAND_MAX - 0.5f;
+            }
         }
     }
 }
@@ -427,26 +427,26 @@ float SmoothNoise(float x, float y, float z, int index)
     // Get the fractional portion to figure out where we are between the values
     float fractX = x - int(x);
     float fractY = y - int(y);
-	float fractZ = z - int(z);
+    float fractZ = z - int(z);
 
     // Wrap around
     int x1 = int(x);
     int y1 = int(y);
-	int z1 = int(z);
+    int z1 = int(z);
     int x2 = x1 == 0 ? windTexSize - 1 : x1 - 1;
     int y2 = y1 == 0 ? windTexSize - 1 : y1 - 1;
-	int z2 = z1 == 0 ? windTexSize - 1 : z1 - 1;
+    int z2 = z1 == 0 ? windTexSize - 1 : z1 - 1;
 
     // Interpolate between the values;
     float value = 0.0f;
     value += fractX * fractY * fractZ * wind[x1][y1][z1][index];
-	value += fractX * (1 - fractY) * fractZ * wind[x1][y2][z1][index];
-	value += (1 - fractX) * fractY * fractZ * wind[x2][y1][z1][index];
-	value += (1 - fractX) * (1 - fractY) * fractZ * wind[x2][y2][z1][index];
-	value += fractX * fractY * (1 - fractZ) * wind[x1][y1][z2][index];
-	value += fractX * (1 - fractY) * (1 - fractZ) * wind[x1][y2][z2][index];
-	value += (1 - fractX) * fractY * (1 - fractZ) * wind[x2][y1][z2][index];
-	value += (1 - fractX) * (1 - fractY) * (1 - fractZ) * wind[x2][y2][z2][index];
+    value += fractX * (1 - fractY) * fractZ * wind[x1][y2][z1][index];
+    value += (1 - fractX) * fractY * fractZ * wind[x2][y1][z1][index];
+    value += (1 - fractX) * (1 - fractY) * fractZ * wind[x2][y2][z1][index];
+    value += fractX * fractY * (1 - fractZ) * wind[x1][y1][z2][index];
+    value += fractX * (1 - fractY) * (1 - fractZ) * wind[x1][y2][z2][index];
+    value += (1 - fractX) * fractY * (1 - fractZ) * wind[x2][y1][z2][index];
+    value += (1 - fractX) * (1 - fractY) * (1 - fractZ) * wind[x2][y2][z2][index];
 
     return value;
 }
@@ -462,21 +462,21 @@ void Turbulence(float size)
     {
         for (int y = 0; y < windTexSize; y++)
         {
-			for (int z = 0; z < windTexSize; z++)
-			{
-				// Do this for each x,y,z value
-				for (int i = 0; i < 3; i++)
-				{
-					size = startSize;
-					value = 0.0f;
-					while (size >= 1)
-					{
-						value += SmoothNoise(x / size, y / size, z / size, i) * size;
-						size /= 2.0f;
-					}
-					windCopy[x][y][z][i] = value / (startSize * 2.0f);
-				}
-			}
+            for (int z = 0; z < windTexSize; z++)
+            {
+                // Do this for each x,y,z value
+                for (int i = 0; i < 3; i++)
+                {
+                    size = startSize;
+                    value = 0.0f;
+                    while (size >= 1)
+                    {
+                        value += SmoothNoise(x / size, y / size, z / size, i) * size;
+                        size /= 2.0f;
+                    }
+                    windCopy[x][y][z][i] = value / (startSize * 2.0f);
+                }
+            }
         }
     }
 }
@@ -494,9 +494,9 @@ void SetupWind()
     GenerateNoise((GLfloat***)wind, windTexSize);
     Turbulence(8.0f);
 
-	glBindTexture(GL_TEXTURE_3D, windTex);
-	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB32F, windTexSize, windTexSize, windTexSize, 
-		0, GL_RGB, GL_FLOAT, wind);
+    glBindTexture(GL_TEXTURE_3D, windTex);
+    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB32F, windTexSize, windTexSize, windTexSize, 
+        0, GL_RGB, GL_FLOAT, windCopy);
 
     //For sampling
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -527,8 +527,8 @@ void LoadPoints()
         x = distribution(generator);
         y = distribution(generator);
         z = distribution(generator);
-		y += 1.0f;	// y should be positive
-		y /= 2.0f;	// drop back into range of [0..1]
+        y += 1.0f;    // y should be positive
+        y /= 2.0f;    // drop back into range of [0..1]
  
         positions.push_back(glm::vec3(x,y,z));
         velocities.push_back(glm::vec3(0.0, 0.0001, 0.0));
@@ -783,7 +783,7 @@ void ResizeWindow(GLFWwindow* window, int width, int height)
     ScreenWidth = width;
     ScreenHeight = height;
 
-	glViewport((int)(xoff/2.0), (int)(yoff/2.0), width, height);
+    glViewport((int)(xoff/2.0), (int)(yoff/2.0), width, height);
 }
 
 

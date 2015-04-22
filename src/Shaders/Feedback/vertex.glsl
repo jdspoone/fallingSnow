@@ -20,7 +20,7 @@ void main() {
 
   // Calculate the next velocity by interpolating between the previous velocity and the new one.
   nextVelocity = texture(windTex, index).xyz / 1000.0;
-  nextVelocity = mix(nextVelocity, previousVelocity, gl_VertexID / numParticles);
+  nextVelocity = mix(nextVelocity, previousVelocity, min(0.9, max(0.1, gl_VertexID / numParticles)));
 
   // Where the particle will be for the next draw call.
   nextPosition = previousPosition - nextVelocity;
