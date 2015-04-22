@@ -36,7 +36,7 @@ vector<glm::vec3> velocities;
 vector<GLfloat> angles;
 GLuint snowProgram, feedbackProgram, sceneProgram;
 GLuint renderPosition, renderVelocity, renderAngle;
-GLuint feedbackPosition, feedbackVelocity;
+GLuint feedbackPosition, feedbackVelocity, feedbackAngle;
 GLuint snowVAO, floorVAO;
 GLuint positionVBO[2];
 GLuint velocityVBO[2];
@@ -347,8 +347,8 @@ void setupRenderingContext()
  
   //Load vertex shader to preform feedback transformations on
   feedbackProgram = loadFeedbackShader("Shaders/Feedback/vertex.glsl");
-  const GLchar* feedbackVaryings[] = { "nextPosition", "nextVelocity" };
-  glTransformFeedbackVaryings(feedbackProgram, 2, feedbackVaryings, GL_SEPARATE_ATTRIBS);
+  const GLchar* feedbackVaryings[] = { "nextPosition", "nextVelocity", "nextAngle" };
+  glTransformFeedbackVaryings(feedbackProgram, 3, feedbackVaryings, GL_SEPARATE_ATTRIBS);
   glLinkProgram(feedbackProgram);
 
   // Attribute bindings
@@ -358,6 +358,7 @@ void setupRenderingContext()
 
   feedbackPosition = glGetAttribLocation(feedbackProgram, "previousPosition");
   feedbackVelocity = glGetAttribLocation(feedbackProgram, "previousVelocity");
+  feedbackAngle = glGetAttribLocation(feedbackProgram, "previousAngle");
 
   // Generate our vertex array object
   glGenVertexArrays(1, &snowVAO);
@@ -532,9 +533,14 @@ void Feedback()
   glEnableVertexAttribArray(feedbackVelocity);
   glVertexAttribPointer(feedbackVelocity, 3, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
 
-  // Re-bind our output VBO
+  glBindBuffer(GL_ARRAY_BUFFER, angleVBO[iteration % 2]);
+  glEnableVertexAttribArray(feedbackAngle);
+  glVertexAttribPointer(feedbackAngle, 1, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
+
+  // Re-bind our output VBOs
   glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, positionVBO[(iteration + 1) % 2]);
   glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, velocityVBO[(iteration + 1) % 2]);
+  glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 2, angleVBO[(iteration + 1) % 2]);
 
   // Perform the feedback transform
   glBeginTransformFeedback(GL_POINTS);
@@ -545,10 +551,12 @@ void Feedback()
   // Swap the 2 buffers
   std::swap(positionVBO[0], positionVBO[1]);
   std::swap(velocityVBO[0], velocityVBO[1]);
+  std::swap(angleVBO[0], angleVBO[1]);
   
   // Disable the attributes used in transform feedback
   glDisableVertexAttribArray(feedbackPosition);
   glDisableVertexAttribArray(feedbackVelocity);
+  glDisableVertexAttribArray(feedbackAngle);
 
   // Unbind the VAO
   glBindVertexArray(0);

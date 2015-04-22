@@ -2,9 +2,11 @@
 
 in vec3 previousPosition;
 in vec3 previousVelocity;
+in float previousAngle;
 
 out vec3 nextPosition;
 out vec3 nextVelocity;
+out float nextAngle;
 
 void main() {
 
@@ -15,5 +17,7 @@ void main() {
   }
  
   nextVelocity = previousVelocity;
+  
+  nextAngle = previousAngle + 1;
 }
 
