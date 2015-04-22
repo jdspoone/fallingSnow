@@ -341,6 +341,7 @@ void LoadScenery()
   floorVAO = CreateVAO3(floor, sceneProgram);
 }
 
+
 void setupRenderingContext()
 {
   //Load vertex, geomtry, and fragment shaders for snow
@@ -427,7 +428,6 @@ void LoadPoints()
   particleCount = (unsigned int)positions.size();
   cout <<"Particle Count: " << particleCount << endl;
   
-
   // Allocate and initialize the position vertex buffer
   for (int i = 0; i < 2; ++i) {
     glBindBuffer(GL_ARRAY_BUFFER, positionVBO[i]);
@@ -446,6 +446,7 @@ void LoadPoints()
     glBufferData(GL_ARRAY_BUFFER, angles.size() * sizeof(GLfloat), &angles[0], GL_DYNAMIC_DRAW);
   }
 }
+
 
 void RenderScene()
 {
@@ -641,6 +642,7 @@ void CursorPos(GLFWwindow * window, double xpos, double ypos)
 	   cameraTheta +=  0.00005 * (ScreenHeight/2.0 - ypos);
 	}
 }
+
 
 void ResizeWindow(GLFWwindow* window, int width, int height)
 {

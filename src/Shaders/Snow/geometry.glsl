@@ -2,9 +2,8 @@
 
 layout(points) in;
 
+// Note: Input to the geometry shader must be treated as an array.
 in float angleDegrees[];
-
-uniform vec3 cameraPosition;
 
 uniform vec4 firstTriangleVertex;
 uniform vec4 secondTriangleVertex;
