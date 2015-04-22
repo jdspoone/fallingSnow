@@ -408,7 +408,7 @@ void LoadPoints()
         z = ((rand() % 10 + 6)/100.0f) + j;
         positions.push_back(glm::vec3(x,y,z));
         velocities.push_back(glm::vec3(0.0, -0.0001, 0.0));
-        angles.push_back(90);
+        angles.push_back(rand() % 90);
       }
   
   particleCount = (unsigned int)positions.size();
