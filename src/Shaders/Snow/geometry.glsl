@@ -4,8 +4,6 @@ layout(points) in;
 
 in float angleDegrees[];
 
-uniform vec3 cameraPosition;
-
 uniform vec4 firstTriangleVertex;
 uniform vec4 secondTriangleVertex;
 uniform vec4 thirdTriangleVertex;
