@@ -218,27 +218,25 @@ GLuint loadShadersVF(const char *vPath, const char *fPath)
 // Loads a PNG from file, and adds info to texture
 void LoadTexture(const char* filename, GLuint textureID, GLuint shaderID)
 {
-	/*
-	* Load Image
-	*/
+  // Load Image
 	vector<unsigned char> image; //the raw pixels
-  	unsigned width, height;
+	unsigned width, height;
 
-  	//decode
-  	unsigned error = lodepng::decode(image, width, height, filename);
+  // Decode
+  unsigned error = lodepng::decode(image, width, height, filename);
 	cout<< filename <<" >> height: "<<height<<", width: "<<width<<endl;
 
-  	//if there's an error, display it
-  	if(error) cout << "decoder error " << error << ": " 
-		<< lodepng_error_text(error) << endl;
+  // If there's an error, display it
+  if(error)
+    cout << "decoder error " << error << ": " << lodepng_error_text(error) << endl;
 	
-	//Bind
+	// Bind
 	glBindTexture(GL_TEXTURE_2D, textureID);
 
-	//Load image into texture
+	// Load image into texture
 	glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, &image[0]);
 
-	//For sampling
+	// For sampling
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
