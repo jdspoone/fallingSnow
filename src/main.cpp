@@ -64,7 +64,7 @@ unsigned int maxParticles = 10000000;
 
 // Wind stuff
 GLuint windTex;
-const int windTexSize = 128;
+const int windTexSize = 256;
 GLfloat wind[windTexSize][windTexSize][windTexSize][3];
 GLfloat windCopy[windTexSize][windTexSize][windTexSize][3];
 
@@ -410,9 +410,9 @@ void GenerateNoise()
             for (int z = 0; z < windTexSize; z++)
             {
                 // Initialize wind texture to random values.
-                wind[x][y][z][0] = rand() / (float)RAND_MAX * -1.0f;
-                wind[x][y][z][1] = rand() / (float)RAND_MAX;
-                wind[x][y][z][2] = rand() / (float)RAND_MAX - 0.5f;
+                wind[x][y][z][0] = (rand() / (float)RAND_MAX) * -1.0f;
+                wind[x][y][z][1] = (rand() / (float)RAND_MAX) / 2.0f;
+                wind[x][y][z][2] = (rand() / (float)RAND_MAX) - 0.5f;
             }
         }
     }
