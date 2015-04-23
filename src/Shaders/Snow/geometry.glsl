@@ -5,6 +5,11 @@ layout(points) in;
 // Note: Input to the geometry shader must be treated as an array.
 in float angleDegrees[];
 
+/*
+ * For the sake of efficiency the vertices of the equilateral triangle 
+ * circumscribing the unit circle have been precomputed and passed to
+ * the geometry shader as uniforms
+ */
 uniform vec4 firstTriangleVertex;
 uniform vec4 secondTriangleVertex;
 uniform vec4 thirdTriangleVertex;
