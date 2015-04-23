@@ -380,8 +380,6 @@ void setupRenderingContext()
   glGenBuffers(2, angleVBO);
   
   glEnable(GL_DEPTH_TEST);
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA);
   
   // Create uniforms for the unit equilateral triangle, saves work in the geometry shader
   glUseProgram(snowProgram);
@@ -525,7 +523,7 @@ void LoadPoints()
   srand ((unsigned int)time(NULL));
 
   float b = 1.0f;        //negative & positive Boundary for all three dimesnions
-  int particles = 30000; //Number of particles to be distributed within 3D-Bounds
+  int particles = 300000; //Number of particles to be distributed within 3D-Bounds
   
   std::default_random_engine generator;
   std::uniform_real_distribution<float> distribution(-b,b);
@@ -639,6 +637,10 @@ void RenderScene()
 
 
 void RenderSnow() {
+
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
   // Bind the shader program
   glUseProgram(snowProgram);
 
@@ -675,6 +677,8 @@ void RenderSnow() {
   
   // Unbind the shader program
   glUseProgram(0);
+
+  glDisable(GL_BLEND);
 }
 
 
@@ -683,11 +687,12 @@ void Render()
   glClearColor(0.6f,0.6f,0.6f,0.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  RenderSnow();
 
   if (key_one)
       RenderScene();
   
+  RenderSnow(); //Must be rendered last for blending to work
+
   glfwSwapBuffers(window);
 }
 
