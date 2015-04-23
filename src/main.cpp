@@ -67,6 +67,7 @@ GLuint windTex;
 const int windTexSize = 256;
 GLfloat wind[windTexSize][windTexSize][windTexSize][3];
 GLfloat windCopy[windTexSize][windTexSize][windTexSize][3];
+GLfloat windSpeed = 1.0;
 
 //Scene Toggles
 bool key_one = false;
@@ -694,6 +695,10 @@ void Feedback()
   // Bind the transform feedback program
   glUseProgram(feedbackProgram);
   
+  // Wind speed uniform
+  GLuint windSpeedID = glGetUniformLocation(feedbackProgram, "windSpeed");
+  glUniform1f(windSpeedID, windSpeed);
+  
   // Bind the VAO
   glBindVertexArray(snowVAO);
 
@@ -845,6 +850,10 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
     particleCount = std::min(particleCount + particleStep, maxParticles);
   if (key == GLFW_KEY_DOWN && (action == GLFW_PRESS || action == GLFW_REPEAT))
       particleCount = particleCount < particleStep ? 0u : particleCount - particleStep;
+  if (key == GLFW_KEY_LEFT && (action == GLFW_PRESS || action == GLFW_REPEAT))
+      windSpeed = max(0.25, windSpeed - 0.05);
+  if (key == GLFW_KEY_RIGHT && (action == GLFW_PRESS || action == GLFW_REPEAT))
+      windSpeed = min(2.50, windSpeed + 0.05);
   if (key == GLFW_KEY_1 && action == GLFW_PRESS)
       key_one = !key_one;
   if (key == GLFW_KEY_2 && action == GLFW_PRESS)
