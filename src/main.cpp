@@ -73,6 +73,8 @@ GLfloat windSpeed = 1.0;
 bool key_one = false;
 bool key_two = false;
 
+
+
 #pragma mark - Shaders
 
 GLuint loadShader(GLenum type, const GLchar *path)
@@ -414,6 +416,7 @@ void GenerateNoise()
                 wind[x][y][z][0] = (rand() / (float)RAND_MAX) * -1.0f;
                 wind[x][y][z][1] = (rand() / (float)RAND_MAX) / 2.0f;
                 wind[x][y][z][2] = (rand() / (float)RAND_MAX) - 0.5f;
+                
             }
         }
     }
@@ -458,7 +461,7 @@ Adds together several zoomed-in versions of the wind texture.
 void Turbulence(float size)
 {
     float value = 0.0f, startSize = size;
-
+    bool a = true, b = true, c = true;
     for (int x = 0; x < windTexSize; x++)
     {
         for (int y = 0; y < windTexSize; y++)
@@ -477,8 +480,14 @@ void Turbulence(float size)
                     }
                     windCopy[x][y][z][i] = value / (startSize * 2.0f);
                 }
+
             }
         }
+        
+        float p = (x+1)/(float)windTexSize*100.0;
+        if (p > 25 && a){ cout<<"Turbulence 25% Loaded"<<endl; a = false;}
+        if (p > 50 && b){ cout<<"Turbulence 50% Loaded"<<endl; b = false;}
+        if (p > 75 && c){ cout<<"Turbulence 75% Loaded"<<endl; c = false;}
     }
     cout << "Turbulence added to wind texture." << endl;
 }
@@ -515,25 +524,20 @@ void LoadPoints()
   /* initialize random seed: */
   srand ((unsigned int)time(NULL));
 
-  float b = 1.0f;    //Boundary
-  int nrolls = 100; //Number of passes
+  float b = 1.0f;        //negative & positive Boundary for all three dimesnions
+  int particles = 30000; //Number of particles to be distributed within 3D-Bounds
   
   std::default_random_engine generator;
   std::uniform_real_distribution<float> distribution(-b,b);
-  for (int k = 0; k <= nrolls; ++k) {
-    for (int i = 0; i <= nrolls; ++i) {
-      for (int j = 0; j <= nrolls; ++j) {
+  for (int k = 0; k < particles; ++k) {
         x = distribution(generator);
         y = distribution(generator);
         z = distribution(generator);
-        y += 1.0f;    // y should be positive
-        y /= 2.0f;    // drop back into range of [0..1]
+        y = (y - (-b)) / (b - (-b));   //Normalizes to [0,1] domain
  
         positions.push_back(glm::vec3(x,y,z));
         velocities.push_back(glm::vec3(0.0, 0.0001, 0.0));
         angles.push_back((float)fmod((float)rand(), 90));
-      }
-    }
    }
 
   particleCount = (unsigned int)positions.size();
@@ -592,7 +596,7 @@ void AdjustNumPoints()
             glBindBuffer(GL_ARRAY_BUFFER, angleVBO[i]);
             glBufferSubData(GL_ARRAY_BUFFER, (angles.size() - stop) * sizeof(GLfloat), stop * sizeof(GLfloat), &angles[angles.size() - stop]);
         }
-        //cout << "New particle count: " << positions.size() << endl;
+        cout << "New particle count: " << positions.size() << endl;
     }
     else if (particleCount < positions.size())
     {
@@ -602,7 +606,7 @@ void AdjustNumPoints()
             velocities.pop_back();
             angles.pop_back();
         }
-        //cout << "New particle count: " << positions.size() << endl;
+        cout << "New particle count: " << positions.size() << endl;
     }
 }
 
@@ -860,7 +864,6 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
       key_two = !key_two;
 }
 
-
 void FPS()
 {
     double elapsed = glfwGetTime() - Timer;
@@ -917,9 +920,12 @@ int main(int argc, char *argv[])
   }
   
   setupRenderingContext();
+  cout<<"Rendering Setup Complete"<<endl;
   SetupWind();
+  cout<<"Wind Setup Complete"<<endl;
   UpdateMVP();
   LoadPoints();
+  cout<<"Particle Setup Complete"<<endl;
   LoadScenery();
 
   while(!glfwWindowShouldClose(window)) {
