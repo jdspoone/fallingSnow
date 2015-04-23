@@ -16,6 +16,8 @@
 #include <vector>
 #include <algorithm>
 #include <time.h>
+
+#include "model.h"
 #include "lodepng.h" //Credit: http://lodev.org/lodepng/
 
 #ifdef _WIN32 
@@ -44,6 +46,7 @@ GLuint positionVBO[2];
 GLuint velocityVBO[2];
 GLuint angleVBO[2];
 GLuint floorTID;
+vector<Model*> models;
 
 unsigned int iteration = 0;
 
@@ -72,8 +75,6 @@ GLfloat windSpeed = 1.0;
 //Scene Toggles
 bool key_one = false;
 bool key_two = false;
-
-
 
 #pragma mark - Shaders
 
@@ -348,6 +349,13 @@ void LoadScenery()
   floor.push_back(P5);
 
   floorVAO = CreateVAO3(floor, sceneProgram);
+
+  models.push_back(new Model("Models/bunny.obj"));
+  models.push_back(new Model("Models/bunny.obj"));
+  models[0]->position = glm::vec3(0.2f, 0.0f, 0.2f);
+  models[0]->scale = 0.8f;
+  models[1]->position = glm::vec3(-0.4f, 0.0f, -0.1f);
+  models[1]->scale = 1.0f;
 }
 
 
@@ -619,14 +627,28 @@ void RenderScene()
   glBindTexture(GL_TEXTURE_2D, floorTID);
 
   //Pass through camera
-  GLuint MatrixID = glGetUniformLocation(sceneProgram, "MVP");
-  glUniformMatrix4fv(MatrixID,  1, GL_FALSE, &MVP[0][0]);
+  GLuint location = glGetUniformLocation(sceneProgram, "MVP");
+  glUniformMatrix4fv(location, 1, GL_FALSE, &MVP[0][0]);
+  location = glGetUniformLocation(sceneProgram, "cameraPos");
+  glUniform3f(location, cameraPosition.x, cameraPosition.y, cameraPosition.z);
 
   // Bind the VAO
   glBindVertexArray(floorVAO);
   
   // Render snowflakes to screen
   glDrawArrays(GL_TRIANGLES, 0, 6);
+
+  for (unsigned int i = 0; i < models.size(); i++)
+  {
+	  MVP = glm::translate(MVP, models[i]->position);
+	  MVP = glm::scale(MVP, glm::vec3(models[i]->scale));
+	  location = glGetUniformLocation(sceneProgram, "MVP");
+	  glUniformMatrix4fv(location, 1, GL_FALSE, &MVP[0][0]);
+	  MVP = glm::scale(MVP, glm::vec3(1 / models[i]->scale));
+	  MVP = glm::translate(MVP, -models[i]->position);
+	  glBindVertexArray(models[i]->vao);
+	  glDrawElements(GL_TRIANGLES, models[i]->viBuffer.size(), GL_UNSIGNED_INT, 0);
+  }
 
   // Unbind the VAO
   glBindVertexArray(0);
