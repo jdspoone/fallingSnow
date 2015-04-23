@@ -58,8 +58,9 @@ bool ScreenLock = false;
 int ScreenWidth, ScreenHeight;
 
 unsigned int particleCount = 300000;
-unsigned int particleStep = 5000;
-int maxChangePerFrame = 1000;
+unsigned int particleStep = 30000;
+unsigned int maxChangePerFrame = 1000;
+unsigned int maxParticles = 10000000;
 
 // Wind stuff
 GLuint windTex;
@@ -96,32 +97,32 @@ GLuint loadShader(GLenum type, const GLchar *path)
   GLuint shader = glCreateShader(type);
   
   // Load the shader code from the given file path
-	std::string shaderCode;
-	std::ifstream shaderStream(path, std::ios::in);
-	if(shaderStream.is_open()) {
+    std::string shaderCode;
+    std::ifstream shaderStream(path, std::ios::in);
+    if(shaderStream.is_open()) {
     std::string Line = "";
     while(getline(shaderStream, Line))
       shaderCode += "\n" + Line;
     shaderStream.close();
-	}
-	else
-		printf("Could not open %s shader file: %s\n", typeName, path);
+    }
+    else
+        printf("Could not open %s shader file: %s\n", typeName, path);
   
-	GLint result = GL_FALSE;
-	int logLength;
+    GLint result = GL_FALSE;
+    int logLength;
   
-	// Compile the shader
-	printf("Compiling %s shader: %s\n", typeName, path);
-	char const * shaderSourcePointer = shaderCode.c_str();
-	glShaderSource(shader, 1, &shaderSourcePointer , NULL);
-	glCompileShader(shader);
+    // Compile the shader
+    printf("Compiling %s shader: %s\n", typeName, path);
+    char const * shaderSourcePointer = shaderCode.c_str();
+    glShaderSource(shader, 1, &shaderSourcePointer , NULL);
+    glCompileShader(shader);
 
-	// Check Vertex Shader
-	glGetShaderiv(shader, GL_COMPILE_STATUS, &result);
-	glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &logLength);
-	std::vector<char> shaderErrorMessage(logLength);
-	glGetShaderInfoLog(shader, logLength, NULL, &shaderErrorMessage[0]);
-	if (logLength > 0)
+    // Check Vertex Shader
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &result);
+    glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &logLength);
+    std::vector<char> shaderErrorMessage(logLength);
+    glGetShaderInfoLog(shader, logLength, NULL, &shaderErrorMessage[0]);
+    if (logLength > 0)
     fprintf(stdout, "Checking %s shader: %s\n", typeName, &shaderErrorMessage[0]);
   
   return shader;
@@ -130,94 +131,94 @@ GLuint loadShader(GLenum type, const GLchar *path)
 
 GLuint loadFeedbackShader(const char *vPath)
 {
-	// Create the shader
-	GLuint vertexID = loadShader(GL_VERTEX_SHADER, vPath);
+    // Create the shader
+    GLuint vertexID = loadShader(GL_VERTEX_SHADER, vPath);
 
-	// Link the program
-	fprintf(stdout, "Linking feedback program\n\n");
-	GLuint programID = glCreateProgram();
-	glAttachShader(programID, vertexID);
-	glLinkProgram(programID);
+    // Link the program
+    fprintf(stdout, "Linking feedback program\n\n");
+    GLuint programID = glCreateProgram();
+    glAttachShader(programID, vertexID);
+    glLinkProgram(programID);
 
-	GLint result = GL_FALSE;
-	int logLength;
+    GLint result = GL_FALSE;
+    int logLength;
 
-	// Check the program
-	glGetProgramiv(programID, GL_LINK_STATUS, &result);
-	glGetProgramiv(programID, GL_INFO_LOG_LENGTH, &logLength);
-	std::vector<char> errorMessage(max(logLength, int(1)));
-	glGetProgramInfoLog(programID, logLength, NULL, &errorMessage[0]);
-	if (logLength > 0)
+    // Check the program
+    glGetProgramiv(programID, GL_LINK_STATUS, &result);
+    glGetProgramiv(programID, GL_INFO_LOG_LENGTH, &logLength);
+    std::vector<char> errorMessage(max(logLength, int(1)));
+    glGetProgramInfoLog(programID, logLength, NULL, &errorMessage[0]);
+    if (logLength > 0)
     fprintf(stdout, "Linking Check: %s\n", &errorMessage[0]);
 
-	glDeleteShader(vertexID);
+    glDeleteShader(vertexID);
 
-	return programID;
+    return programID;
 }
 
 
 GLuint loadShadersVGF(const char *vPath, const char *gPath, const char *fPath)
 {
-	// Create the shaders
-	GLuint vertexID = loadShader(GL_VERTEX_SHADER, vPath);
-	GLuint geometryID = loadShader(GL_GEOMETRY_SHADER, gPath);
-	GLuint fragmentID = loadShader(GL_FRAGMENT_SHADER, fPath);
+    // Create the shaders
+    GLuint vertexID = loadShader(GL_VERTEX_SHADER, vPath);
+    GLuint geometryID = loadShader(GL_GEOMETRY_SHADER, gPath);
+    GLuint fragmentID = loadShader(GL_FRAGMENT_SHADER, fPath);
 
-	// Link the program
-	fprintf(stdout, "Linking Vertex-Geomentry-Fragment program\n\n");
-	GLuint programID = glCreateProgram();
-	glAttachShader(programID, vertexID);
-	glAttachShader(programID, geometryID);
-	glAttachShader(programID, fragmentID);
-	glLinkProgram(programID);
+    // Link the program
+    fprintf(stdout, "Linking Vertex-Geomentry-Fragment program\n\n");
+    GLuint programID = glCreateProgram();
+    glAttachShader(programID, vertexID);
+    glAttachShader(programID, geometryID);
+    glAttachShader(programID, fragmentID);
+    glLinkProgram(programID);
 
-	GLint result = GL_FALSE;
-	int logLength;
+    GLint result = GL_FALSE;
+    int logLength;
 
-	// Check the program
-	glGetProgramiv(programID, GL_LINK_STATUS, &result);
-	glGetProgramiv(programID, GL_INFO_LOG_LENGTH, &logLength);
-	std::vector<char> errorMessage(max(logLength, int(1)));
-	glGetProgramInfoLog(programID, logLength, NULL, &errorMessage[0]);
-	if (logLength > 0)
-	    fprintf(stdout, "Linking Check: %s\n", &errorMessage[0]);
+    // Check the program
+    glGetProgramiv(programID, GL_LINK_STATUS, &result);
+    glGetProgramiv(programID, GL_INFO_LOG_LENGTH, &logLength);
+    std::vector<char> errorMessage(max(logLength, int(1)));
+    glGetProgramInfoLog(programID, logLength, NULL, &errorMessage[0]);
+    if (logLength > 0)
+        fprintf(stdout, "Linking Check: %s\n", &errorMessage[0]);
 
-	glDeleteShader(vertexID);
-	glDeleteShader(geometryID);
-	glDeleteShader(fragmentID);
+    glDeleteShader(vertexID);
+    glDeleteShader(geometryID);
+    glDeleteShader(fragmentID);
 
-	return programID;
+    return programID;
 }
 
 
 GLuint loadShadersVF(const char *vPath, const char *fPath)
 {
-	// Create the shaders
-	GLuint vertexID = loadShader(GL_VERTEX_SHADER, vPath);
-	GLuint fragmentID = loadShader(GL_FRAGMENT_SHADER, fPath);
+    // Create the shaders
+    GLuint vertexID = loadShader(GL_VERTEX_SHADER, vPath);
+    GLuint fragmentID = loadShader(GL_FRAGMENT_SHADER, fPath);
 
-	// Link the program
-	fprintf(stdout, "Linking Vertex-Fragment program\n\n");
-	GLuint programID = glCreateProgram();
-	glAttachShader(programID, vertexID);
-	glAttachShader(programID, fragmentID);
-	glLinkProgram(programID);
+    // Link the program
+    fprintf(stdout, "Linking Vertex-Fragment program\n\n");
+    GLuint programID = glCreateProgram();
+    glAttachShader(programID, vertexID);
+    glAttachShader(programID, fragmentID);
+    glLinkProgram(programID);
 
-	GLint result = GL_FALSE;
-	int logLength;
+    GLint result = GL_FALSE;
+    int logLength;
 
-	// Check the program
-	glGetProgramiv(programID, GL_LINK_STATUS, &result);
-	glGetProgramiv(programID, GL_INFO_LOG_LENGTH, &logLength);
-	std::vector<char> errorMessage(max(logLength, int(1)));
-	glGetProgramInfoLog(programID, logLength, NULL, &errorMessage[0]);
-	if (logLength > 0)
+    // Check the program
+    glGetProgramiv(programID, GL_LINK_STATUS, &result);
+    glGetProgramiv(programID, GL_INFO_LOG_LENGTH, &logLength);
+    std::vector<char> errorMessage(max(logLength, int(1)));
+    glGetProgramInfoLog(programID, logLength, NULL, &errorMessage[0]);
+    if (logLength > 0)
     fprintf(stdout, "Linking Check: %s\n", &errorMessage[0]);
 
-	glDeleteShader(vertexID);
-	glDeleteShader(fragmentID);
+    glDeleteShader(vertexID);
+    glDeleteShader(fragmentID);
 
-	return programID;
+    return programID;
 }
 
 
@@ -227,26 +228,26 @@ GLuint loadShadersVF(const char *vPath, const char *fPath)
 void LoadTexture(const char* filename, GLuint textureID, GLuint shaderID)
 {
   // Load Image
-	vector<unsigned char> image; //the raw pixels
-	unsigned width, height;
+    vector<unsigned char> image; //the raw pixels
+    unsigned width, height;
 
   // Decode
   unsigned error = lodepng::decode(image, width, height, filename);
-	cout<< filename <<" >> height: "<<height<<", width: "<<width<<endl;
+    cout<< filename <<" >> height: "<<height<<", width: "<<width<<endl;
 
   // If there's an error, display it
   if(error)
     cout << "decoder error " << error << ": " << lodepng_error_text(error) << endl;
-	
-	// Bind
-	glBindTexture(GL_TEXTURE_2D, textureID);
+    
+    // Bind
+    glBindTexture(GL_TEXTURE_2D, textureID);
 
-	// Load image into texture
-	glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, &image[0]);
+    // Load image into texture
+    glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, &image[0]);
 
-	// For sampling
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    // For sampling
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
   glBindTexture(GL_TEXTURE_2D, 0);
 }
@@ -399,14 +400,14 @@ void setupRenderingContext()
 /*
 Generates random noise in the provided array.
 */
-void GenerateNoise(GLfloat*** noise, int size)
+void GenerateNoise()
 {
     srand((unsigned int)time(NULL));
-    for (int x = 0; x < size; x++)
+    for (int x = 0; x < windTexSize; x++)
     {
-        for (int y = 0; y < size; y++)
+        for (int y = 0; y < windTexSize; y++)
         {
-            for (int z = 0; z < size; z++)
+            for (int z = 0; z < windTexSize; z++)
             {
                 // Initialize wind texture to random values.
                 wind[x][y][z][0] = rand() / (float)RAND_MAX * -1.0f;
@@ -415,6 +416,7 @@ void GenerateNoise(GLfloat*** noise, int size)
             }
         }
     }
+    cout << "Noise generated in wind texture." << endl;
 }
 
 /*
@@ -477,6 +479,7 @@ void Turbulence(float size)
             }
         }
     }
+    cout << "Turbulence added to wind texture." << endl;
 }
 
 
@@ -489,12 +492,12 @@ void SetupWind()
 
     glGenTextures(1, &windTex);
 
-    GenerateNoise((GLfloat***)wind, windTexSize);
-    Turbulence(8.0f);
+    GenerateNoise();
+    Turbulence(4.0f);
 
     glBindTexture(GL_TEXTURE_3D, windTex);
     glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB32F, windTexSize, windTexSize, windTexSize, 
-        0, GL_RGB, GL_FLOAT, windCopy);
+        0, GL_RGB, GL_FLOAT, &windCopy[0][0][0][0]);
 
     //For sampling
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -527,31 +530,79 @@ void LoadPoints()
  
         positions.push_back(glm::vec3(x,y,z));
         velocities.push_back(glm::vec3(0.0, 0.0001, 0.0));
-        angles.push_back(rand() % 90);
+        angles.push_back((float)fmod((float)rand(), 90));
       }
     }
-  }
-  
-  particleCount = (unsigned int)positions.size();
+   }
+
+  particleCount = positions.size();
   cout <<"Particle Count: " << particleCount << endl;
   
   // Allocate and initialize the position vertex buffer
   for (int i = 0; i < 2; ++i) {
     glBindBuffer(GL_ARRAY_BUFFER, positionVBO[i]);
-    glBufferData(GL_ARRAY_BUFFER, positions.size() * sizeof(glm::vec3), &positions[0][0], GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, maxParticles * sizeof(glm::vec3), NULL, GL_DYNAMIC_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, positions.size() * sizeof(glm::vec3), &positions[0][0]);
   }
   
   // Allocate and initialize the velocity vertex buffer
   for (int i = 0; i < 2; ++i) {
     glBindBuffer(GL_ARRAY_BUFFER, velocityVBO[i]);
-    glBufferData(GL_ARRAY_BUFFER, velocities.size() * sizeof(glm::vec3), &velocities[0][0], GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, maxParticles * sizeof(glm::vec3), NULL, GL_DYNAMIC_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, velocities.size() * sizeof(glm::vec3), &velocities[0][0]);
   }
   
   // Allocate and initialize the angle vertex buffer
   for (int i = 0; i < 2; ++i) {
     glBindBuffer(GL_ARRAY_BUFFER, angleVBO[i]);
-    glBufferData(GL_ARRAY_BUFFER, angles.size() * sizeof(GLfloat), &angles[0], GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, maxParticles * sizeof(glm::vec3), NULL, GL_DYNAMIC_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, angles.size() * sizeof(GLfloat), &angles[0]);
   }
+}
+
+/*
+Check the number of particles, then add or delete particles as necessary.
+*/
+void AdjustNumPoints()
+{
+    if (particleCount > positions.size())
+    {
+        float x, y, z;
+        unsigned int stop = std::min(maxChangePerFrame, (unsigned int)(particleCount - positions.size()));
+        for (unsigned int i = 0; i < stop; i++)
+        {
+            x = (rand() / (float)RAND_MAX - 0.5f) * 2;
+            z = (rand() / (float)RAND_MAX - 0.5f) * 2;
+            y = 1.0f;
+            positions.push_back(glm::vec3(x, y, z));
+            velocities.push_back(glm::vec3(0.0f, 0.0001f, 0.0f));
+            angles.push_back((float)fmod((float)rand(), 90));
+        }
+        // Buffer new data
+        for (int i = 0; i < 2; ++i) {
+            glBindBuffer(GL_ARRAY_BUFFER, positionVBO[i]);
+            glBufferSubData(GL_ARRAY_BUFFER, (positions.size() - stop) * sizeof(glm::vec3), stop * sizeof(glm::vec3), &positions[positions.size() - stop][0]);
+        }
+        for (int i = 0; i < 2; ++i) {
+            glBindBuffer(GL_ARRAY_BUFFER, velocityVBO[i]);
+            glBufferSubData(GL_ARRAY_BUFFER, (velocities.size() - stop) * sizeof(glm::vec3), stop * sizeof(glm::vec3), &velocities[velocities.size() - stop][0]);
+        }
+        for (int i = 0; i < 2; ++i) {
+            glBindBuffer(GL_ARRAY_BUFFER, angleVBO[i]);
+            glBufferSubData(GL_ARRAY_BUFFER, (angles.size() - stop) * sizeof(GLfloat), stop * sizeof(GLfloat), &angles[angles.size() - stop]);
+        }
+        //cout << "New particle count: " << positions.size() << endl;
+    }
+    else if (particleCount < positions.size())
+    {
+        for (unsigned int i = particleCount; i < positions.size(); )
+        {
+            positions.pop_back();
+            velocities.pop_back();
+            angles.pop_back();
+        }
+        //cout << "New particle count: " << positions.size() << endl;
+    }
 }
 
 
@@ -675,7 +726,7 @@ void Feedback()
   glDrawArrays(GL_POINTS, 0, (int)positions.size());
   glEndTransformFeedback();
   glFlush();
-			
+  
   // Swap the various vertex buffers
   std::swap(positionVBO[0], positionVBO[1]);
   std::swap(velocityVBO[0], velocityVBO[1]);
@@ -736,11 +787,11 @@ void UpdateMVP()
 // Event handler for mouse clicks
 void MouseButton(GLFWwindow * window, int button, int action, int mods)
 {
-	if (action == GLFW_PRESS) {
-		ScreenLock = true;
+    if (action == GLFW_PRESS) {
+        ScreenLock = true;
   }
-	if (action == GLFW_RELEASE) {
-		ScreenLock = false;
+    if (action == GLFW_RELEASE) {
+        ScreenLock = false;
     glfwSetCursorPos(window, ScreenWidth/2.0, ScreenHeight/2.0);
   }
 }
@@ -749,11 +800,11 @@ void MouseButton(GLFWwindow * window, int button, int action, int mods)
 // Handler for keeping track of mouse position
 void CursorPos(GLFWwindow * window, double xpos, double ypos)
 {
-	//Check if holding down mouse button
-	if (ScreenLock) {
-	   cameraPhi   +=  0.00005 * (ScreenWidth/2.0 - xpos);
-	   cameraTheta +=  0.00005 * (ScreenHeight/2.0 - ypos);
-	}
+    //Check if holding down mouse button
+    if (ScreenLock) {
+       cameraPhi   +=  0.00005f * (ScreenWidth/2.0f - (float)xpos);
+       cameraTheta +=  0.00005f * (ScreenHeight/2.0f - (float)ypos);
+    }
 }
 
 
@@ -791,11 +842,11 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
   if (key == GLFW_KEY_D && (action == GLFW_PRESS || action == GLFW_REPEAT))
     cameraPosition += cameraRight * camera_step;
   if (key == GLFW_KEY_UP && (action == GLFW_PRESS || action == GLFW_REPEAT))
-    particleCount += particleStep;
+    particleCount = std::min(particleCount + particleStep, maxParticles);
   if (key == GLFW_KEY_DOWN && (action == GLFW_PRESS || action == GLFW_REPEAT))
-    particleCount = std::max(particleCount - particleStep, 0u);
+      particleCount = particleCount < particleStep ? 0u : particleCount - particleStep;
   if (key == GLFW_KEY_1 && action == GLFW_PRESS)
-      {key_one = !key_one; cout<<"key_one toggled"<<endl;}
+      key_one = !key_one;
   if (key == GLFW_KEY_2 && action == GLFW_PRESS)
       key_two = !key_two;
 }
@@ -803,14 +854,14 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 
 void FPS()
 {
-	double elapsed = glfwGetTime() - Timer;
-	if (elapsed > 1.0) {
-		char title[32];
-		sprintf(title,"Falling Snow, FPS: %0.2f",Frames/elapsed);
-		glfwSetWindowTitle(window,title);
-		Timer = glfwGetTime();
-		Frames = 0;
-	}
+    double elapsed = glfwGetTime() - Timer;
+    if (elapsed > 1.0) {
+        char title[32];
+        sprintf(title,"Falling Snow, FPS: %0.2f",Frames/elapsed);
+        glfwSetWindowTitle(window,title);
+        Timer = glfwGetTime();
+        Frames = 0;
+    }
     else {
     Frames++;
   }
@@ -865,6 +916,7 @@ int main(int argc, char *argv[])
   while(!glfwWindowShouldClose(window)) {
     FPS();
     glfwPollEvents();
+    AdjustNumPoints();
     UpdateMVP();
     Render();
     Feedback();
