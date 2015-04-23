@@ -535,7 +535,7 @@ void LoadPoints()
     }
    }
 
-  particleCount = positions.size();
+  particleCount = (unsigned int)positions.size();
   cout <<"Particle Count: " << particleCount << endl;
   
   // Allocate and initialize the position vertex buffer
