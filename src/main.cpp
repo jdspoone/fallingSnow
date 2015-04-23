@@ -490,7 +490,7 @@ void Turbulence(float size)
             }
         }
         
-        float p = (x+1)/(float)windTexSize*100.0;
+        float p = (x+1)/(float)windTexSize*100.0f;
         if (p > 25 && a){ cout<<"Turbulence 25% Loaded"<<endl; a = false;}
         if (p > 50 && b){ cout<<"Turbulence 50% Loaded"<<endl; b = false;}
         if (p > 75 && c){ cout<<"Turbulence 75% Loaded"<<endl; c = false;}
@@ -882,9 +882,9 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
   if (key == GLFW_KEY_DOWN && (action == GLFW_PRESS || action == GLFW_REPEAT))
       particleCount = particleCount < particleStep ? 0u : particleCount - particleStep;
   if (key == GLFW_KEY_LEFT && (action == GLFW_PRESS || action == GLFW_REPEAT))
-      windSpeed = max(0.25, windSpeed - 0.05);
+      windSpeed = max(0.25f, windSpeed - 0.05f);
   if (key == GLFW_KEY_RIGHT && (action == GLFW_PRESS || action == GLFW_REPEAT))
-      windSpeed = min(2.50, windSpeed + 0.05);
+      windSpeed = min(2.50f, windSpeed + 0.05f);
   if (key == GLFW_KEY_1 && action == GLFW_PRESS)
       key_one = !key_one;
   if (key == GLFW_KEY_2 && action == GLFW_PRESS)
@@ -965,6 +965,7 @@ int main(int argc, char *argv[])
   }
 
   //Cleanup 
+  models.clear();
   glDeleteBuffers(2, positionVBO);
   glDeleteBuffers(2, velocityVBO);
   glDeleteBuffers(2, angleVBO);

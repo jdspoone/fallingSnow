@@ -43,7 +43,6 @@ int Model::readObj(string filename)
 			vector<glm::vec4> vBuffer2;
 			vector<glm::vec3> nBuffer2;
 			vector<glm::vec2> tBuffer2;
-			unsigned int vi, ni, ti;
 			for (unsigned int i = 0; i < viBuffer.size(); i++)
 			{
 				vBuffer2.push_back(vBuffer[viBuffer[i]]);
