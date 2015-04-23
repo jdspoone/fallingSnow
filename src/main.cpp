@@ -16,7 +16,10 @@
 #include <vector>
 #include <algorithm>
 #include <time.h>
+
+//Local Libraries
 #include "lodepng.h" //Credit: http://lodev.org/lodepng/
+#include "ObjLoader/objloader.hpp" //Credit: NeHe OpenGL tutorial code
 
 #ifdef _WIN32 
 #define M_PI 3.14159265358979323846f
@@ -39,7 +42,7 @@ vector<GLfloat> angles;
 GLuint snowProgram, feedbackProgram, sceneProgram;
 GLuint renderPosition, renderVelocity, renderAngle;
 GLuint feedbackPosition, feedbackVelocity, feedbackAngle;
-GLuint snowVAO, floorVAO;
+GLuint snowVAO, floorVAO, forrestVAO;
 GLuint positionVBO[2];
 GLuint velocityVBO[2];
 GLuint angleVBO[2];
@@ -48,7 +51,7 @@ GLuint floorTID;
 unsigned int iteration = 0;
 
 //====== Camera Settings =======
-glm::vec3 cameraPosition = glm::vec3(0.1f); //initial starting position
+glm::vec3 cameraPosition = glm::vec3(0.0f,0.1f,-0.8f); //initial starting position
 glm::vec3 cameraDirection;
 glm::vec3 cameraRight; 
 GLfloat camera_step = 0.01f;
@@ -149,7 +152,7 @@ GLuint loadFeedbackShader(const char *vPath)
     // Check the program
     glGetProgramiv(programID, GL_LINK_STATUS, &result);
     glGetProgramiv(programID, GL_INFO_LOG_LENGTH, &logLength);
-    std::vector<char> errorMessage(max(logLength, int(1)));
+    std::vector<char> errorMessage(std::max(logLength, int(1)));
     glGetProgramInfoLog(programID, logLength, NULL, &errorMessage[0]);
     if (logLength > 0)
     fprintf(stdout, "Linking Check: %s\n", &errorMessage[0]);
@@ -181,7 +184,7 @@ GLuint loadShadersVGF(const char *vPath, const char *gPath, const char *fPath)
     // Check the program
     glGetProgramiv(programID, GL_LINK_STATUS, &result);
     glGetProgramiv(programID, GL_INFO_LOG_LENGTH, &logLength);
-    std::vector<char> errorMessage(max(logLength, int(1)));
+    std::vector<char> errorMessage(std::max(logLength, int(1)));
     glGetProgramInfoLog(programID, logLength, NULL, &errorMessage[0]);
     if (logLength > 0)
         fprintf(stdout, "Linking Check: %s\n", &errorMessage[0]);
@@ -213,7 +216,7 @@ GLuint loadShadersVF(const char *vPath, const char *fPath)
     // Check the program
     glGetProgramiv(programID, GL_LINK_STATUS, &result);
     glGetProgramiv(programID, GL_INFO_LOG_LENGTH, &logLength);
-    std::vector<char> errorMessage(max(logLength, int(1)));
+    std::vector<char> errorMessage(std::max(logLength, int(1)));
     glGetProgramInfoLog(programID, logLength, NULL, &errorMessage[0]);
     if (logLength > 0)
     fprintf(stdout, "Linking Check: %s\n", &errorMessage[0]);
@@ -307,6 +310,8 @@ void LoadScenery()
   //Load Shader
   sceneProgram = loadShadersVF("Shaders/Scene/vertex.glsl", "Shaders/Scene/fragment.glsl");
 
+  //======Floor Start ============
+
   //Load a Texture
   glGenTextures(1, &floorTID); //load back texture ID
   glBindTexture(GL_TEXTURE_2D, floorTID);
@@ -348,6 +353,35 @@ void LoadScenery()
   floor.push_back(P5);
 
   floorVAO = CreateVAO3(floor, sceneProgram);
+  cout<<"Floor Loaded"<<endl;
+
+  //======Floor End ============
+
+  //======Forrest Start ========
+
+  std::vector< glm::vec3 > vertices;
+  std::vector< glm::vec2 > uvs;
+  std::vector< glm::vec3 > normals;
+  bool res = loadOBJ("Models/cube.obj", vertices, uvs, normals);
+  
+  //Now load into GLobject
+  vector<GLobject> forrest;
+  float scale = 0.02f;
+  for (int i = 0; i < vertices.size(); ++i)
+  {   
+      glm::vec3 v = vertices.at(i) * scale;
+      v[1] = v[1] + scale;
+	  v[0] = v[0] + 0.25;
+      v[2] = v[2] + 0.25;
+      glm::vec3 t = glm::vec3(uvs[i][0], uvs[i][1], -1.0);
+      GLobject p = GLobject(v,normals.at(i), t); 
+      forrest.push_back(p);
+  }
+  forrestVAO = CreateVAO3(forrest, sceneProgram);
+  cout<<"Forrest Loaded"<<endl;
+
+  //======Forrest End ==========
+
 }
 
 
@@ -384,9 +418,9 @@ void setupRenderingContext()
   // Create uniforms for the unit equilateral triangle, saves work in the geometry shader
   glUseProgram(snowProgram);
   
-  glm::vec4 firstTriangleVertex = glm::vec4(cos(0), sin(0), 0.0, 0.0);
-  glm::vec4 secondTriangleVertex = glm::vec4(cos(120 * M_PI / 180), sin(120 * M_PI / 180), 0.0, 0.0);
-  glm::vec4 thirdTriangleVertex = glm::vec4(cos(240 * M_PI / 180), sin(240 * M_PI / 180), 0.0, 0.0);
+  glm::vec4 firstTriangleVertex = glm::vec4(std::cos(0), std::sin(0), 0.0, 0.0);
+  glm::vec4 secondTriangleVertex = glm::vec4(cos(120 * M_PI / 180), std::sin(120 * M_PI / 180), 0.0, 0.0);
+  glm::vec4 thirdTriangleVertex = glm::vec4(cos(240 * M_PI / 180), std::sin(240 * M_PI / 180), 0.0, 0.0);
 
   GLuint firstTriangleVertexID = glGetUniformLocation(snowProgram, "firstTriangleVertex");
   glUniform4fv(firstTriangleVertexID, 1, &firstTriangleVertex[0]);
@@ -622,16 +656,15 @@ void RenderScene()
   GLuint MatrixID = glGetUniformLocation(sceneProgram, "MVP");
   glUniformMatrix4fv(MatrixID,  1, GL_FALSE, &MVP[0][0]);
 
-  // Bind the VAO
   glBindVertexArray(floorVAO);
-  
-  // Render snowflakes to screen
   glDrawArrays(GL_TRIANGLES, 0, 6);
-
-  // Unbind the VAO
-  glBindVertexArray(0);
   
-  // Unbind the shader program
+
+  glBindVertexArray(forrestVAO);
+  glDrawArrays(GL_TRIANGLES, 0, 39);
+  
+  // Unbind 
+  glBindVertexArray(0);
   glUseProgram(0);
 }
 
@@ -764,15 +797,15 @@ void Feedback()
 void UpdateMVP()
 {
   //Camera
-  cameraDirection = glm::vec3(cos(cameraTheta) * sin(cameraPhi),
-                                       sin(cameraTheta),
-                                       cos(cameraTheta) * cos(cameraPhi));
+  cameraDirection = glm::vec3(std::cos(cameraTheta) * std::sin(cameraPhi),
+                                       std::sin(cameraTheta),
+                                       std::cos(cameraTheta) * std::cos(cameraPhi));
   glm::vec3 cameraTarget = cameraPosition + cameraDirection; 
   //cout<<"Camera Target: "<<cameraTarget.x<<","<<cameraTarget.y<<","<<cameraTarget.z<<endl; 
  
-  cameraRight = glm::vec3(sin(cameraPhi - M_PI/2.0f),
+  cameraRight = glm::vec3(std::sin(cameraPhi - M_PI/2.0f),
                            0,
-                           cos(cameraPhi - M_PI/2.0f));
+                           std::cos(cameraPhi - M_PI/2.0f));
 
   glm:: vec3 upVector = glm::cross(cameraRight, cameraDirection);
   glm::mat4 CameraMatrix = glm::lookAt(cameraPosition, cameraTarget, upVector);
@@ -860,9 +893,9 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
   if (key == GLFW_KEY_DOWN && (action == GLFW_PRESS || action == GLFW_REPEAT))
       particleCount = particleCount < particleStep ? 0u : particleCount - particleStep;
   if (key == GLFW_KEY_LEFT && (action == GLFW_PRESS || action == GLFW_REPEAT))
-      windSpeed = max(0.25, windSpeed - 0.05);
+      windSpeed = std::max(0.25, windSpeed - 0.05);
   if (key == GLFW_KEY_RIGHT && (action == GLFW_PRESS || action == GLFW_REPEAT))
-      windSpeed = min(2.50, windSpeed + 0.05);
+      windSpeed = std::min(2.50, windSpeed + 0.05);
   if (key == GLFW_KEY_1 && action == GLFW_PRESS)
       key_one = !key_one;
   if (key == GLFW_KEY_2 && action == GLFW_PRESS)
