@@ -639,7 +639,7 @@ void RenderScene()
 void RenderSnow() {
 
   glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA);
 
   // Bind the shader program
   glUseProgram(snowProgram);
