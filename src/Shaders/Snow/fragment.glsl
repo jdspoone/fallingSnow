@@ -10,5 +10,5 @@ void main()
     // Gaussian translucency
     float distance = pow(length(middle - position), 0.9);
 
-    finalColor = vec4(1.0f, 1.0f, 1.0f, max(0.5f * (0.002f - distance) / 0.001f, 0.00f));
+	finalColor = vec4(0.95f, 0.95f, 0.95f, max(0.3f * (0.0016f - distance) / 0.001f, 0.00f));
 }
