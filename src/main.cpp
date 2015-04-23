@@ -58,8 +58,9 @@ bool ScreenLock = false;
 int ScreenWidth, ScreenHeight;
 
 unsigned int particleCount = 300000;
-unsigned int particleStep = 5000;
-int maxChangePerFrame = 1000;
+unsigned int particleStep = 30000;
+unsigned int maxChangePerFrame = 1000;
+unsigned int maxParticles = 10000000;
 
 // Wind stuff
 GLuint windTex;
@@ -399,14 +400,14 @@ void setupRenderingContext()
 /*
 Generates random noise in the provided array.
 */
-void GenerateNoise(GLfloat*** noise, int size)
+void GenerateNoise()
 {
     srand((unsigned int)time(NULL));
-    for (int x = 0; x < size; x++)
+    for (int x = 0; x < windTexSize; x++)
     {
-        for (int y = 0; y < size; y++)
+		for (int y = 0; y < windTexSize; y++)
         {
-            for (int z = 0; z < size; z++)
+			for (int z = 0; z < windTexSize; z++)
             {
                 // Initialize wind texture to random values.
                 wind[x][y][z][0] = rand() / (float)RAND_MAX * -1.0f;
@@ -415,6 +416,7 @@ void GenerateNoise(GLfloat*** noise, int size)
             }
         }
     }
+	cout << "Noise generated in wind texture." << endl;
 }
 
 /*
@@ -477,6 +479,7 @@ void Turbulence(float size)
             }
         }
     }
+	cout << "Turbulence added to wind texture." << endl;
 }
 
 
@@ -489,12 +492,12 @@ void SetupWind()
 
     glGenTextures(1, &windTex);
 
-    GenerateNoise((GLfloat***)wind, windTexSize);
-    Turbulence(8.0f);
+    GenerateNoise();
+    Turbulence(4.0f);
 
     glBindTexture(GL_TEXTURE_3D, windTex);
     glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB32F, windTexSize, windTexSize, windTexSize, 
-        0, GL_RGB, GL_FLOAT, windCopy);
+        0, GL_RGB, GL_FLOAT, &windCopy[0][0][0][0]);
 
     //For sampling
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -530,36 +533,88 @@ void LoadPoints()
  
         positions.push_back(glm::vec3(x,y,z));
         velocities.push_back(glm::vec3(0.0, 0.0001, 0.0));
-        angles.push_back(rand() % 90);
+        angles.push_back((float)fmod((float)rand(), 90));
       }
     }
-   cout<<"k: "<<k<<endl;
+   //cout<<"k: "<<k<<endl;
    }
   
   //Then jitter points with a LDS sequence for pseudo-randomness
   //Jittery jitter jitter jitter
   //TODO: implement jitter if neccessary
 
-  particleCount = (unsigned int)positions.size();
+  particleCount = positions.size();
   cout <<"Particle Count: " << particleCount << endl;
   
   // Allocate and initialize the position vertex buffer
   for (int i = 0; i < 2; ++i) {
     glBindBuffer(GL_ARRAY_BUFFER, positionVBO[i]);
-    glBufferData(GL_ARRAY_BUFFER, positions.size() * sizeof(glm::vec3), &positions[0][0], GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, maxParticles * sizeof(glm::vec3), NULL, GL_DYNAMIC_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, positions.size() * sizeof(glm::vec3), &positions[0][0]);
   }
   
   // Allocate and initialize the velocity vertex buffer
   for (int i = 0; i < 2; ++i) {
     glBindBuffer(GL_ARRAY_BUFFER, velocityVBO[i]);
-    glBufferData(GL_ARRAY_BUFFER, velocities.size() * sizeof(glm::vec3), &velocities[0][0], GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, maxParticles * sizeof(glm::vec3), NULL, GL_DYNAMIC_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, velocities.size() * sizeof(glm::vec3), &velocities[0][0]);
   }
   
   // Allocate and initialize the angle vertex buffer
   for (int i = 0; i < 2; ++i) {
     glBindBuffer(GL_ARRAY_BUFFER, angleVBO[i]);
-    glBufferData(GL_ARRAY_BUFFER, angles.size() * sizeof(GLfloat), &angles[0], GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, maxParticles * sizeof(glm::vec3), NULL, GL_DYNAMIC_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, angles.size() * sizeof(GLfloat), &angles[0]);
   }
+}
+
+/*
+Check the number of particles, then add or delete particles as necessary.
+*/
+void AdjustNumPoints()
+{
+	if (particleCount > positions.size())
+	{
+		float x, y, z;
+		unsigned int stop = std::min(maxChangePerFrame, particleCount - positions.size());
+		for (unsigned int i = 0; i < stop; i++)
+		{
+			x = (rand() / (float)RAND_MAX - 0.5f) * 2;
+			z = (rand() / (float)RAND_MAX - 0.5f) * 2;
+			y = 1.0f;
+			positions.push_back(glm::vec3(x, y, z));
+			velocities.push_back(glm::vec3(0.0f, 0.0001f, 0.0f));
+			angles.push_back((float)fmod((float)rand(), 90));
+		}
+		// Allocate and initialize the position vertex buffer
+		for (int i = 0; i < 2; ++i) {
+			glBindBuffer(GL_ARRAY_BUFFER, positionVBO[i]);
+			glBufferSubData(GL_ARRAY_BUFFER, (positions.size() - stop) * sizeof(glm::vec3), stop * sizeof(glm::vec3), &positions[positions.size() - stop][0]);
+		}
+
+		// Allocate and initialize the velocity vertex buffer
+		for (int i = 0; i < 2; ++i) {
+			glBindBuffer(GL_ARRAY_BUFFER, velocityVBO[i]);
+			glBufferSubData(GL_ARRAY_BUFFER, (velocities.size() - stop) * sizeof(glm::vec3), stop * sizeof(glm::vec3), &velocities[velocities.size() - stop][0]);
+		}
+
+		// Allocate and initialize the angle vertex buffer
+		for (int i = 0; i < 2; ++i) {
+			glBindBuffer(GL_ARRAY_BUFFER, angleVBO[i]);
+			glBufferSubData(GL_ARRAY_BUFFER, (angles.size() - stop) * sizeof(GLfloat), stop * sizeof(GLfloat), &angles[angles.size() - stop]);
+		}
+		//cout << "New particle count: " << positions.size() << endl;
+	}
+	else if (particleCount < positions.size())
+	{
+		for (unsigned int i = particleCount; i < positions.size(); )
+		{
+			positions.pop_back();
+			velocities.pop_back();
+			angles.pop_back();
+		}
+		//cout << "New particle count: " << positions.size() << endl;
+	}
 }
 
 
@@ -759,8 +814,8 @@ void CursorPos(GLFWwindow * window, double xpos, double ypos)
 {
 	//Check if holding down mouse button
 	if (ScreenLock) {
-	   cameraPhi   +=  0.00005 * (ScreenWidth/2.0 - xpos);
-	   cameraTheta +=  0.00005 * (ScreenHeight/2.0 - ypos);
+	   cameraPhi   +=  0.00005f * (ScreenWidth/2.0f - (float)xpos);
+	   cameraTheta +=  0.00005f * (ScreenHeight/2.0f - (float)ypos);
 	}
 }
 
@@ -799,7 +854,7 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
   if (key == GLFW_KEY_D && (action == GLFW_PRESS || action == GLFW_REPEAT))
     cameraPosition += cameraRight * camera_step;
   if (key == GLFW_KEY_UP && (action == GLFW_PRESS || action == GLFW_REPEAT))
-    particleCount += particleStep;
+    particleCount = std::min(particleCount + particleStep, maxParticles);
   if (key == GLFW_KEY_DOWN && (action == GLFW_PRESS || action == GLFW_REPEAT))
     particleCount = std::max(particleCount - particleStep, 0u);
   if (key == GLFW_KEY_1 && action == GLFW_PRESS)
@@ -814,7 +869,7 @@ void FPS()
 	double elapsed = glfwGetTime() - Timer;
 	if (elapsed > 1.0) {
 		char title[32];
-		sprintf(title,"Falling Snow, FPS: %0.2f",Frames/elapsed);
+		sprintf_s(title,"Falling Snow, FPS: %0.2f",Frames/elapsed);
 		glfwSetWindowTitle(window,title);
 		Timer = glfwGetTime();
 		Frames = 0;
@@ -873,6 +928,7 @@ int main(int argc, char *argv[])
   while(!glfwWindowShouldClose(window)) {
     FPS();
     glfwPollEvents();
+	AdjustNumPoints();
     UpdateMVP();
     Render();
     Feedback();
