@@ -34,7 +34,7 @@ using namespace std;
 GLFWwindow* window = NULL;
 GLuint Frames = 0;
 double Timer = glfwGetTime();
-glm::mat4 MVP;
+glm::mat4 MVP, VP;
 vector<glm::vec3> positions;
 vector<glm::vec3> velocities;
 vector<GLfloat> angles;
@@ -643,7 +643,7 @@ void RenderScene()
   GLuint location = glGetUniformLocation(sceneProgram, "MVP");
   glUniformMatrix4fv(location, 1, GL_FALSE, &MVP[0][0]);
   location = glGetUniformLocation(sceneProgram, "cameraPos");
-  glUniform3f(location, cameraPosition.x, cameraPosition.y, cameraPosition.z);
+  glUniform3fv(location, 1, glm::value_ptr(cameraPosition));
 
   // Bind the VAO
   glBindVertexArray(floorVAO);
@@ -654,8 +654,14 @@ void RenderScene()
   {
 	  MVP = glm::translate(MVP, models[i]->position);
 	  MVP = glm::scale(MVP, glm::vec3(models[i]->scale));
-	  location = glGetUniformLocation(sceneProgram, "MVP");
+	  location = glGetUniformLocation(treeProgram, "MVP");
 	  glUniformMatrix4fv(location, 1, GL_FALSE, &MVP[0][0]);
+	  location = glGetUniformLocation(treeProgram, "VP");
+	  glUniformMatrix4fv(location, 1, GL_FALSE, &VP[0][0]);
+	  location = glGetUniformLocation(treeProgram, "light_position");
+      glm::vec3 lightpos = glm::vec3(0.0f,10.0f,0.0f);
+      glUniform3fv(location, 1, glm::value_ptr(lightpos));
+	  
 	  MVP = glm::scale(MVP, glm::vec3(1 / models[i]->scale));
 	  MVP = glm::translate(MVP, -models[i]->position);
 	  glBindVertexArray(models[i]->vao);
@@ -825,6 +831,7 @@ void UpdateMVP()
 
   //MVP
   glm::mat4 CameraMVP = ProjectionMatrix * CameraMatrix * ModelMatrix;
+  VP = CameraMatrix * ModelMatrix;
   MVP = CameraMVP;
 
 }
