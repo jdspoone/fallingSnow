@@ -649,6 +649,8 @@ void RenderScene()
   glUniform3f(location, cameraPosition.x, cameraPosition.y, cameraPosition.z);
   location = glGetUniformLocation(sceneProgram, "clearColor");
   glUniform4f(location, clearColor.x, clearColor.y, clearColor.z, clearColor.w);
+  location = glGetUniformLocation(sceneProgram, "numParticles");
+  glUniform1f(location, (float)positions.size());
 
   // Bind the VAO
   glBindVertexArray(floorVAO);
@@ -674,6 +676,8 @@ void RenderScene()
 	  glUniform3f(location, cameraPosition.x, cameraPosition.y, cameraPosition.z);
 	  location = glGetUniformLocation(treeProgram, "clearColor");
 	  glUniform4f(location, clearColor.x, clearColor.y, clearColor.z, clearColor.w);
+	  location = glGetUniformLocation(treeProgram, "numParticles");
+	  glUniform1f(location, (float)positions.size());
 	  
 	  MVP = glm::scale(MVP, glm::vec3(1 / models[i]->scale));
 	  MVP = glm::translate(MVP, -models[i]->position);
