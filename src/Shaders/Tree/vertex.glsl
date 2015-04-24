@@ -7,6 +7,7 @@ out vec3 v;
 out vec3 n;
 out vec3 l;
  
+uniform mat4 M;
 uniform mat4 MVP;
 uniform mat4 VP;
 uniform vec3 light_position;
@@ -14,7 +15,7 @@ uniform vec3 light_position;
 void main(){
  
     gl_Position =  MVP * position;
-	v = position.xyz;
+	v = gl_Position.xyz;
     n =  mat3(VP) * normal;
     vec4 p = VP * position;
     l = light_position - p.xyz;

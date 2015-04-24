@@ -12,6 +12,6 @@ uniform vec4 clearColor;
 void main() {
     vec2 UV = tex.xy; 
 	finalColor = texture(texUnit, UV);
-	finalColor = mix(clearColor, finalColor, min(1.0, pow(1 / length(cameraPosition - v), 2)));
+	finalColor = mix(clearColor, finalColor, min(1.0, (1 - clearColor.x) * pow(1 / v.z, 2)));
 }
 

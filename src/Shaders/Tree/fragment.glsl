@@ -20,6 +20,6 @@ void main() {
     vec3 color = vec3(0.0f, 0.3f, 0.0f); //Green 
    
 	finalColor = vec4(ambient + diffuse + color, 1.0);
-	finalColor = mix(clearColor, finalColor, min(1.0, pow(1 / length(cameraPosition - v), 2)));
+	finalColor = mix(clearColor, finalColor, min(1.0, (1 - clearColor.x) * pow(1 / v.z, 2)));
 }
 

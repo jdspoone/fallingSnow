@@ -628,7 +628,7 @@ void AdjustNumPoints()
         }
         cout << "New particle count: " << positions.size() << endl;
     }
-	float color = std::min(0.9f, std::max(cbrt((float)positions.size()) * 0.0075f, 0.3f));
+	float color = std::min(0.9f, std::max(pow((float)positions.size(), 1/5.0f) * 0.04f, 0.45f));
 	clearColor = glm::vec4(color, color, color, 1.0f);
 }
 
@@ -657,6 +657,10 @@ void RenderScene()
   glUseProgram(treeProgram);
   for (unsigned int i = 0; i < models.size(); i++)
   {
+	  glm::mat4 M = glm::translate(glm::mat4(1.0f), models[i]->position);
+	  M = glm::scale(M, glm::vec3(models[i]->scale));
+	  VP = glm::translate(VP, models[i]->position);
+	  VP = glm::scale(VP, glm::vec3(models[i]->scale));
 	  MVP = glm::translate(MVP, models[i]->position);
 	  MVP = glm::scale(MVP, glm::vec3(models[i]->scale));
 	  location = glGetUniformLocation(treeProgram, "MVP");
@@ -673,6 +677,10 @@ void RenderScene()
 	  
 	  MVP = glm::scale(MVP, glm::vec3(1 / models[i]->scale));
 	  MVP = glm::translate(MVP, -models[i]->position);
+	  VP = glm::scale(VP, glm::vec3(1 / models[i]->scale));
+	  VP = glm::translate(VP, -models[i]->position);
+	  M = glm::scale(M, glm::vec3(1 / models[i]->scale));
+	  M = glm::translate(M, -models[i]->position);
 	  glBindVertexArray(models[i]->vao);
 	  //glDrawElements(GL_TRIANGLES, models[i]->viBuffer.size(), GL_UNSIGNED_INT, 0);
 	  glDrawArrays(GL_TRIANGLES,0, models[i]->viBuffer.size());
