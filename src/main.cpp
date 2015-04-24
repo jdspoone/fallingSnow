@@ -919,7 +919,8 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
   if (key == GLFW_KEY_D && (action == GLFW_PRESS || action == GLFW_REPEAT))
     cameraPosition += cameraRight * camera_step;
   if (key == GLFW_KEY_UP && (action == GLFW_PRESS || action == GLFW_REPEAT))
-    particleCount = std::min(particleCount + particleStep, maxParticles);
+	  if (particleCount == positions.size()) 
+		  particleCount = std::min(particleCount + particleStep, maxParticles);
   if (key == GLFW_KEY_DOWN && (action == GLFW_PRESS || action == GLFW_REPEAT))
       particleCount = particleCount < particleStep ? 0u : particleCount - particleStep;
   if (key == GLFW_KEY_LEFT && (action == GLFW_PRESS || action == GLFW_REPEAT))
