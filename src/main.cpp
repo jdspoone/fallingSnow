@@ -628,6 +628,8 @@ void AdjustNumPoints()
         }
         cout << "New particle count: " << positions.size() << endl;
     }
+	float color = std::min(0.9f, std::max(cbrt((float)positions.size()) * 0.0075f, 0.3f));
+	clearColor = glm::vec4(color, color, color, 1.0f);
 }
 
 
