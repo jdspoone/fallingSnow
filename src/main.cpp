@@ -357,7 +357,7 @@ void LoadScenery()
   treeProgram = loadShadersVF("Shaders/Tree/vertex.glsl", "Shaders/Tree/fragment.glsl");
   string tree_cone = "Models/cone.obj";
   string tree_one = "Models/tree1.obj";
-  int num_of_trees = 30;
+  int num_of_trees = 100;
 
   std::default_random_engine generator;
   std::uniform_real_distribution<float> distribution(-1.0,1.0);

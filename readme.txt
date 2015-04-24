@@ -7,7 +7,7 @@ Credits to external sources
 ==============================
 1. Texture/cowcube.png to Etienne
 2. lodepng.h & lodepng.cpp to http://lodev.org/lodepng/
-3. Models/tree1.obj to http://www.blendswap.com/blends/view/68648
+3. Models/  to http://www.blendswap.com/blends/view/68648
 
 ==============================
 Controls
