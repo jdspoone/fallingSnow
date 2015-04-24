@@ -6,11 +6,12 @@ in vec3 n;
 out vec4 finalColor;
 
 uniform sampler2D texUnit;
+uniform vec3 cameraPosition;
+uniform vec4 clearColor;
 
 void main() {
-    v;
     vec2 UV = tex.xy; 
-    finalColor = texture(texUnit, UV);
-    //finalColor = vec4(0.0,0.0,0.0,1.0);
+	finalColor = texture(texUnit, UV);
+	finalColor = mix(clearColor, finalColor, min(1.0, pow(1 / length(cameraPosition - v), 2)));
 }
 

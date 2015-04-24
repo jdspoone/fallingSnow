@@ -46,6 +46,7 @@ GLuint positionVBO[2];
 GLuint velocityVBO[2];
 GLuint angleVBO[2];
 GLuint floorTID;
+glm::vec4 clearColor(0.6, 0.6, 0.6, 1.0);
 vector<Model*> models;
 
 unsigned int iteration = 0;
@@ -642,8 +643,10 @@ void RenderScene()
   //Pass through camera
   GLuint location = glGetUniformLocation(sceneProgram, "MVP");
   glUniformMatrix4fv(location, 1, GL_FALSE, &MVP[0][0]);
-  location = glGetUniformLocation(sceneProgram, "cameraPos");
-  glUniform3fv(location, 1, glm::value_ptr(cameraPosition));
+  location = glGetUniformLocation(sceneProgram, "cameraPosition");
+  glUniform3f(location, cameraPosition.x, cameraPosition.y, cameraPosition.z);
+  location = glGetUniformLocation(sceneProgram, "clearColor");
+  glUniform4f(location, clearColor.x, clearColor.y, clearColor.z, clearColor.w);
 
   // Bind the VAO
   glBindVertexArray(floorVAO);
@@ -661,6 +664,10 @@ void RenderScene()
 	  location = glGetUniformLocation(treeProgram, "light_position");
       glm::vec3 lightpos = glm::vec3(0.0f,10.0f,0.0f);
       glUniform3fv(location, 1, glm::value_ptr(lightpos));
+	  location = glGetUniformLocation(treeProgram, "cameraPosition");
+	  glUniform3f(location, cameraPosition.x, cameraPosition.y, cameraPosition.z);
+	  location = glGetUniformLocation(treeProgram, "clearColor");
+	  glUniform4f(location, clearColor.x, clearColor.y, clearColor.z, clearColor.w);
 	  
 	  MVP = glm::scale(MVP, glm::vec3(1 / models[i]->scale));
 	  MVP = glm::translate(MVP, -models[i]->position);
@@ -725,7 +732,7 @@ void RenderSnow() {
 
 void Render()
 {
-  glClearColor(0.6f,0.6f,0.6f,0.0f);
+  glClearColor(clearColor.x, clearColor.y, clearColor.z, clearColor.w);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
