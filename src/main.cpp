@@ -38,7 +38,7 @@ glm::mat4 MVP;
 vector<glm::vec3> positions;
 vector<glm::vec3> velocities;
 vector<GLfloat> angles;
-GLuint snowProgram, feedbackProgram, sceneProgram;
+GLuint snowProgram, feedbackProgram, sceneProgram, treeProgram;
 GLuint renderPosition, renderVelocity, renderAngle;
 GLuint feedbackPosition, feedbackVelocity, feedbackAngle;
 GLuint snowVAO, floorVAO;
@@ -51,7 +51,7 @@ vector<Model*> models;
 unsigned int iteration = 0;
 
 //====== Camera Settings =======
-glm::vec3 cameraPosition = glm::vec3(0.1f); //initial starting position
+glm::vec3 cameraPosition = glm::vec3(0.0f,0.1f, -0.8f); //initial starting position
 glm::vec3 cameraDirection;
 glm::vec3 cameraRight; 
 GLfloat camera_step = 0.01f;
@@ -350,12 +350,25 @@ void LoadScenery()
 
   floorVAO = CreateVAO3(floor, sceneProgram);
 
-  models.push_back(new Model("Models/bunny.obj"));
-  models.push_back(new Model("Models/bunny.obj"));
-  models[0]->position = glm::vec3(0.2f, 0.0f, 0.2f);
-  models[0]->scale = 0.8f;
-  models[1]->position = glm::vec3(-0.4f, 0.0f, -0.1f);
-  models[1]->scale = 1.0f;
+  //Load forrest 
+
+  //Model Info
+  treeProgram = loadShadersVF("Shaders/Tree/vertex.glsl", "Shaders/Tree/fragment.glsl");
+  string tree_cone = "Models/cone.obj";
+  string tree_one = "Models/tree1.obj";
+  int num_of_trees = 30;
+
+  std::default_random_engine generator;
+  std::uniform_real_distribution<float> distribution(-1.0,1.0);
+  for (int i = 0; i < num_of_trees; ++i)
+  {
+    float x = distribution(generator);
+    float z = distribution(generator);
+    models.push_back(new Model(tree_one));
+    models[i]->position = glm::vec3(x, 0.0f, z);
+    models[i]->scale = 2.0f;
+  }
+
 }
 
 
@@ -490,7 +503,7 @@ void Turbulence(float size)
             }
         }
         
-        float p = (x+1)/(float)windTexSize*100.0f;
+        float p = (x+1)/(float)windTexSize*100.0;
         if (p > 25 && a){ cout<<"Turbulence 25% Loaded"<<endl; a = false;}
         if (p > 50 && b){ cout<<"Turbulence 50% Loaded"<<endl; b = false;}
         if (p > 75 && c){ cout<<"Turbulence 75% Loaded"<<endl; c = false;}
@@ -634,10 +647,9 @@ void RenderScene()
 
   // Bind the VAO
   glBindVertexArray(floorVAO);
-  
-  // Render snowflakes to screen
   glDrawArrays(GL_TRIANGLES, 0, 6);
 
+  glUseProgram(treeProgram);
   for (unsigned int i = 0; i < models.size(); i++)
   {
 	  MVP = glm::translate(MVP, models[i]->position);
@@ -647,7 +659,8 @@ void RenderScene()
 	  MVP = glm::scale(MVP, glm::vec3(1 / models[i]->scale));
 	  MVP = glm::translate(MVP, -models[i]->position);
 	  glBindVertexArray(models[i]->vao);
-	  glDrawElements(GL_TRIANGLES, models[i]->viBuffer.size(), GL_UNSIGNED_INT, 0);
+	  //glDrawElements(GL_TRIANGLES, models[i]->viBuffer.size(), GL_UNSIGNED_INT, 0);
+	  glDrawArrays(GL_TRIANGLES,0, models[i]->viBuffer.size());
   }
 
   // Unbind the VAO
@@ -882,9 +895,9 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
   if (key == GLFW_KEY_DOWN && (action == GLFW_PRESS || action == GLFW_REPEAT))
       particleCount = particleCount < particleStep ? 0u : particleCount - particleStep;
   if (key == GLFW_KEY_LEFT && (action == GLFW_PRESS || action == GLFW_REPEAT))
-      windSpeed = max(0.25f, windSpeed - 0.05f);
+      windSpeed = max(0.25, windSpeed - 0.05);
   if (key == GLFW_KEY_RIGHT && (action == GLFW_PRESS || action == GLFW_REPEAT))
-      windSpeed = min(2.50f, windSpeed + 0.05f);
+      windSpeed = min(2.50, windSpeed + 0.05);
   if (key == GLFW_KEY_1 && action == GLFW_PRESS)
       key_one = !key_one;
   if (key == GLFW_KEY_2 && action == GLFW_PRESS)
@@ -965,7 +978,6 @@ int main(int argc, char *argv[])
   }
 
   //Cleanup 
-  models.clear();
   glDeleteBuffers(2, positionVBO);
   glDeleteBuffers(2, velocityVBO);
   glDeleteBuffers(2, angleVBO);

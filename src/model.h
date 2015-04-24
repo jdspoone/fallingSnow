@@ -4,8 +4,8 @@
 #include <fstream>
 #include <sstream>
 
-#include <GL\glew.h>
-#include <glm\glm.hpp>
+#include <GL/glew.h>
+#include <glm/glm.hpp>
 
 using namespace std;
 
