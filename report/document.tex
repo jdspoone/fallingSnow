@@ -28,8 +28,13 @@ Blah blah blah boring things.
 Slightly more interesting things? Formulae go here.
 
 \section{Implementation}
+
 \subsection{Particle Model}
-Transform feedback, gpu computation, etc.
+For a simulation of falling snow to approach realism, individual snowflakes must have independent and variable velocities. While it is possible to model this entirely on the CPU, this approach quickly becomes infeasible as the number of snowflakes increases. This, along with the fact that the position and velocity attributes of a given particle are independent of those of all others, makes the GPU the ideal place to implement a particle model.
+
+The particle model used in this project was implemented by way of OpenGL's \textit{transform feedback} functionality, which allows for general purpose computation to be outsourced to the GPU. During \textit{transform feedback}, a shader program will write one or more of its output variables into a vertex buffer object (henceforth referred to as a \textit{VBO}). Our implementation included a dedicated transform feedback shader program, with the sole purpose of updating the positions, velocities and rotation angles of snowflakes, 
+
+After compiling the necessary shader files, but before linking the program the feedback varyings must be specified using the \textit{glTransformFeedbackVaryings} method. This is where we specify, as an array of strings, the labels of the output variables we wish to write to \textit{VBOs}. Additionally, we must specify whether we wish the output to be written to separate \textit{VBOs}, or interleaved on a single \textit{VBO}, using \textit{GL\_SEPARATE\_ATTRIBS} or \textit{GL\_INTERLEAVED\_ATTRIBS} respectively. After this, linking the program occurs.
 
 \subsection{Perlin Wind}
 Texture generation, texture usage, etc.
