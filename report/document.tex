@@ -55,7 +55,9 @@ Turbulence is then applied to the texture by taking several ``zoomed in'' versio
 The final 3D texture is passed into the transform feedback shader. Each particle uses its position - normalized to the range of [0..1] -  as an index to get a velocity. This velocity is then mixed with a downward velocity by an amount based on the particle's index. This causes some particles to follow the texture more closely than others, providing more variance between their movements and less banding when they follow the same path. To get the next position, we simply subtract this mixed velocity from the previous position.
 
 \subsection{Fog Aggregation}
-I'm not actually sure, just here because it's probably important enough for a subsection.
+Fog aggregation is determined based on the number of particles in the scene as well as the distance from the camera. We assume the particles are uniformly distributed throughout the scene, although this is untrue when they are first added, so the implementation requires little calculation and is done entirely in a fragment shader applied to the trees and floor. The colour of those objects is determined by mixing the background colour with the object's normal colour by a value calculated by $\frac{numParticles}{5000000}distance^2$. Five million was simply determined to be a result that provided a good initial look for average snowfall and scaled nicely as particles were added and removed. 
+
+To accentuate the effect, we also change the background colour based on the number of particles. This helps to attain the blown-out effect that can be seen when looking through very heavy fog in the snow, especially when there are other light sources being diluted through the fog. When we add or remove particles, we recalculate the background colour to be $0.04 \sqrt[5]{numParticles}$, again chosen based on a nice looking initial value with good scaling.
 
 \section{Results}
 Look cool.
