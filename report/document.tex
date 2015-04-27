@@ -73,7 +73,11 @@ When we add or remove particles, we recalculate the background colour using equa
 Look cool.
 
 \section{Conclusion}
-Finished! Huzzah!
+In summary, the significant portions of our real-time snow renderer were the following: a particle model implemented on the GPU via \textit{transform feedback}; individual snowflakes being emitted from a geometry shader; perlin noise wind via a 3D texture mapping particle positions to velocities; and a simple approximation of snow aggregation.
+
+Prior to this project we had not done any general purpose computation on the GPU, and implementing a particle model in this fashion was very informative. In particular, the lack of non-trivial tutorials on the use of \textit{transform feedback} forced us to closely examine and ultimately understand the OpenGL pipeline much better than we did previously. Working with the geometry shader was also very interesting, both in terms of the interesting possibilities and limitations arising from its use. Because the real-time nature of the project, we were forced to take efficiency into consideration more so than during the this course's assignments, particularly when it came to our various shader programs.
+
+Future work on this project could proceed in a number of different directions. Firstly, an attempt at particle sorting on the GPU could be made, which if successful would allow us do a number of interesting things. For example, intelligently adding and deleting particles, and avoiding the efficiency problems of the geometry shader by rendering snowflakes with different shader programs depending on their distance from the camera. This would however, most likely require the use of another method for general purpose computation on the GPU, as we suspect \textit{transform feedback} is not at all suited for sorting. Additionally or alternatively, the limitations of the geometry shader could be potentially mitigated by introducing a tessellation shader responsible for the level of detail of individual snowflakes. A more sophisticated solution than particle looping to the particle lifecycle problem could be explored as well. Snow aggregation could be made more complex than our current, straightforward implementation of it, potentially taking wind field into account.
 
 \bibliographystyle{acmsiggraph}
 \nocite{*}
