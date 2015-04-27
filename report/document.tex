@@ -25,7 +25,17 @@ Abstract goes here.
 Blah blah blah boring things.
 
 \section{Methodology}
-Slightly more interesting things? Formulae go here.
+Fog aggregation is calculated in a manner that assumes the snow volume is constant across the scene. While this is not particularly accurate - especially when particles are first created and are primarily at the top of the scene - it does allow for a more simplified implementation and makes modifying the formula for a good result much simpler. We determine the effect of the fog on visibility to be:
+\begin{equation} \label{eq:fog}
+\frac{p_{cur}}{p_{const}}d^2
+\end{equation}
+where $p_{cur}$ is the number of particles in the scene, $p_{const}$ is a constant which we set to five million (so that when five million particles are in the scene the term evaluates to 1) and $d$ is the distance to the point. This is similar to the visibility equation presented in Deokar's thesis \cite{deokar09}, however we use it as the factor of a linear interpolation between the background colour and an object's normal colour.
+
+The background color changes based on the number of particles in the scene to approximate the effect of "blowing out" the image due to heavy fog. This is a common effect when there are lots of lights in foggy conditions, and since our scene is not dark it seemed appropriate to implement this. We determined the value using a simple heuristic:
+\begin{equation} \label{eq:bgcolor}
+colour = c\sqrt[5]{p_cur}
+\end{equation}
+Where $c$ is a constant determined to be 0.04 by setting the colour to 0.5, an appropriate midpoint, and setting $p_{cur}$ to 300000 as our starting value. $\sqrt[5]{}$ was chosen since it scaled fairly well to higher values.
 
 \section{Implementation}
 
@@ -50,14 +60,14 @@ While a full fluid dynamics simulation is required for the most accurate results
 
 We start by defining a 3D array of size 256 in each dimension. This is the lowest resolution texture we could generate that still gave us reasonably varied movement with our snowflakes; lower resolutions tended to result in more predictable but less interesting movement of snowflakes. Each element of this array is initialized to three randomized float values, \textit{x}, \textit{y}, and \textit{z}. These values are generated using the standard \textit{rand()} function in the range of [0..1] then adjusted as desired: \textit{x} is made negative to go to the left, \textit{y} is halved to make snowflakes fall slower, and \textit{z} has 0.5 subtracted from it to put it in the range of [-0.5..0.5], thus allowing it to move back and forth.
 
-Turbulence is then applied to the texture by taking several ``zoomed in'' versions of the random array, smoothing over them using a bilinear filter, and adding them together. To elaborate, we iterate over the array and, for each cell, we take three zoom-levels of the texture by simply dividing the index by a factor of two at each level. Since this returns a floating point value, we interpolate between the nearest integer coordinates to determine the value of the array at that point. Adding these interpolated values together, with the more zoomed-in values given more weight, gives us the final texture. This texture is stored in a separate array since storing them back into the original array results in all the values blending together due to the filtering.
+Turbulence is then applied to the texture by taking several "zoomed in" versions of the random array, smoothing over them using a bilinear filter, and adding them together. To elaborate, we iterate over the array and, for each cell, we take three zoom-levels of the texture by simply dividing the index by a factor of two at each level. Since this returns a floating point value, we interpolate between the nearest integer coordinates to determine the value of the array at that point. Adding these interpolated values together, with the more zoomed-in values given more weight, gives us the final texture. This texture is stored in a separate array since storing them back into the original array results in all the values blending together due to the filtering.
 
 The final 3D texture is passed into the transform feedback shader. Each particle uses its position - normalized to the range of [0..1] -  as an index to get a velocity. This velocity is then mixed with a downward velocity by an amount based on the particle's index. This causes some particles to follow the texture more closely than others, providing more variance between their movements and less banding when they follow the same path. To get the next position, we simply subtract this mixed velocity from the previous position.
 
 \subsection{Fog Aggregation}
-Fog aggregation is determined based on the number of particles in the scene as well as the distance from the camera. We assume the particles are uniformly distributed throughout the scene, although this is untrue when they are first added, so the implementation requires little calculation and is done entirely in a fragment shader applied to the trees and floor. The colour of those objects is determined by mixing the background colour with the object's normal colour by a value calculated by $\frac{numParticles}{5000000}distance^2$. Five million was simply determined to be a result that provided a good initial look for average snowfall and scaled nicely as particles were added and removed. 
+Fog aggregation is determined based on the number of particles in the scene as well as the distance from the camera. The assumptions mentioned involving equation~\ref{eq:fog} make it so that the implementation requires little calculation and is done entirely in a fragment shader applied to the trees and floor. The colour of those objects is determined by mixing the background colour with the object's normal colour by a value calculated by equation~\ref{eq:fog}.
 
-To accentuate the effect, we also change the background colour based on the number of particles. This helps to attain the blown-out effect that can be seen when looking through very heavy fog in the snow, especially when there are other light sources being diluted through the fog. When we add or remove particles, we recalculate the background colour to be $0.04 \sqrt[5]{numParticles}$, again chosen based on a nice looking initial value with good scaling.
+When we add or remove particles, we recalculate the background colour using equation~\ref{eq:bgcolor}. We additionally use max/min functions to keep this value between 0.3 and 0.9 in order to keep it from going totally black or totally white as both results looked terrible.
 
 \section{Results}
 Look cool.
@@ -67,5 +77,6 @@ Finished! Huzzah!
 
 \bibliographystyle{acmsiggraph}
 \nocite{*}
-\bibliography{template}
+\bibliography{docbib}
+
 \end{document}
