@@ -61,7 +61,7 @@ $max(\frac{0.3 \cdot (0.0016 - \textit{distance})} {0.001}, 0.00)$
 
 where \textit{distance} is the distance of the fragment from the centre of the snowflake, which was passed from the geometry shader to the fragment shader.
 
-\subsection{Perlin Wind}
+\subsection{Perlin Noise Wind}
 While a full fluid dynamics simulation is required for the most accurate results in modelling the movement of snowflakes, it is far too slow to use for an extremely large system. Instead, a 3D texture is generated before simulation starts to determine each particle's velocity as it moves through the scene.
 
 We start by defining a 3D array of size 256 in each dimension. This is the lowest resolution texture we could generate that still gave us reasonably varied movement with our snowflakes; lower resolutions tended to result in more predictable but less interesting movement of snowflakes. Each element of this array is initialized to three randomized float values, \textit{x}, \textit{y}, and \textit{z}. These values are generated using the standard \textit{rand()} function in the range of [0..1] then adjusted as desired: \textit{x} is made negative to go to the left, \textit{y} is halved to make snowflakes fall slower, and \textit{z} has 0.5 subtracted from it to put it in the range of [-0.5..0.5], thus allowing it to move back and forth.
@@ -76,10 +76,10 @@ Fog aggregation is determined based on the number of particles in the scene as w
 When we add or remove particles, we recalculate the background colour using equation~\ref{eq:bgcolor}. We additionally use max/min functions to keep this value between 0.3 and 0.9 in order to keep it from going totally black or totally white as both results looked terrible.
 
 \section{Results}
-Look cool.
+The video included in this submission demonstrates the results of our project. Initially we show the falling snow without the scene being rendered as well, and demonstrated the variable wind speed. Then we demonstrate rendering the scene and the falling snow together. During this, snow aggregation is shown as well, first with a low density of snow, and then again after increasing the snow density. Lastly we render the scene alone for the sake of contrast. 
 
 \section{Conclusion}
-In summary, the significant portions of our real-time snow renderer were the following: a particle model implemented on the GPU via \textit{transform feedback}; individual snowflakes being emitted from a geometry shader; perlin noise wind via a 3D texture mapping particle positions to velocities; and a simple approximation of snow aggregation.
+In summary, the significant portions of our real-time snow renderer were the following: a particle model implemented on the GPU via \textit{transform feedback}; individual snowflakes being emitted from a geometry shader; \textit{perlin noise} wind via a 3D texture mapping particle positions to velocities; and a simple approximation of snow aggregation.
 
 Prior to this project we had not done any general purpose computation on the GPU, and implementing a particle model in this fashion was very informative. In particular, the lack of non-trivial tutorials on the use of \textit{transform feedback} forced us to closely examine and ultimately understand the OpenGL pipeline much better than we did previously. Working with the geometry shader was also very interesting, both in terms of the interesting possibilities and limitations arising from its use. Because the real-time nature of the project, we were forced to take efficiency into consideration more so than during the this course's assignments, particularly when it came to our various shader programs.
 
