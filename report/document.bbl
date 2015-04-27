@@ -1,9 +1,23 @@
-\begin{thebibliography}{\protect\citename{Deokar }2009}
+\begin{thebibliography}{\protect\citename{Goindaraju et~al\mbox{.} }2005}
 
 \bibitem[\protect\citename{Deokar }2009]{deokar09}
 {\sc Deokar, S.~S.}
 \newblock 2009.
 \newblock {\em Real-Time Snow Rendering}.
 \newblock Master's thesis, University of Minnesota.
+
+\bibitem[\protect\citename{Goindaraju et~al\mbox{.} }2005]{govindaraju05}
+{\sc Goindaraju, N.~K., Raghuvanshi, N., Henson, M., Tuft, D., and Manocha,
+  D.}, 2005.
+\newblock A cache-efficient sorting algorithm for database and data mining
+  computations using graphics processors.
+
+\bibitem[\protect\citename{Moeslund et~al\mbox{.} }2005]{moeslund05}
+{\sc Moeslund, T.~B., Madsen, C.~B., Aagaard, M., and Lerche, D.}, 2005.
+\newblock Modeling falling and accumulating snow.
+
+\bibitem[\protect\citename{Sims }1990]{sims90}
+{\sc Sims, K.}, 1990.
+\newblock Particle animation and rendering using data parallel computation.
 
 \end{thebibliography}
