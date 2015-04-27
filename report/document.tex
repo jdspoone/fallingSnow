@@ -53,7 +53,13 @@ The shader program used to render snowflakes to screen took advantage of both a 
 
 Initially we had hoped to implement more interesting snowflake geometry, specifically full koch snowflakes, but the limitations of the geometry shader prevented us from doing so. Firstly, the value to which one sets a geometry shaders \textit{max\_vertices} is number of vertices that will always be emitted, regardless of how many are explicitly set. This means that if we emitted snowflakes of varying complexity in the same geometry shader based on some criteria, distance from the camera for example, there would be no difference in terms of efficiency between the most complicated snowflake and a single triangle. Additionally, even if this were not a concern, the branching which would be required to select the correct snowflake to emit given the circumstances would become a bottleneck of its own. Branching on the GPU is only efficient if each branch is used roughly half of the time. Since the criteria we would be branching on would be distance from the camera, and since most particles will be relatively far away from the camera, branching would be very inefficient.
 
-Snowflake translucency...
+The snowflake translucency takes advantage of \textit{alpha blending} within OpenGL. This feature is enabled by calling \textit{glBlendFunc}, specifying the source fragment alpha the destination fragment field. The source is what you are currently trying to render, and the destination is what is currently in the framebuffer. The parameters used in our project were \textit{GL\_SRC\_ALPHA}  and \textit{GL\_ONE} respectively.
+
+This blending complemented the geometry with which we built our snowflakes. The alpha of the source fragment was calculated in the fragment shader by 
+
+$max(\frac{0.3 \cdot (0.0016 - \textit{distance})} {0.001}, 0.00)$ 
+
+where \textit{distance} is the distance of the fragment from the centre of the snowflake, which was passed from the geometry shader to the fragment shader.
 
 \subsection{Perlin Wind}
 While a full fluid dynamics simulation is required for the most accurate results in modelling the movement of snowflakes, it is far too slow to use for an extremely large system. Instead, a 3D texture is generated before simulation starts to determine each particle's velocity as it moves through the scene.
