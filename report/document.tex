@@ -12,7 +12,7 @@
 \maketitle
 
 \begin{abstract}
-This report describes the results of our project to render falling snow in real-time. The the infrastructure for the particle model was done on the GPU by way of OpenGL's \textit{transform feedback} capabilities and snowflake geometry was created through the use of a geometry shader, with variable translucency implemented in the fragment shader. Wind was simulated with a 3D texture, mapping particle positions to random velocities, and basic snow aggregation was implemented by blending the the background scene with colour of snow, based upon snow density and the distance from the camera.
+This report describes the results of our project to render falling snow in real-time. The the infrastructure for the particle model was done on the GPU by way of OpenGL's \textit{transform feedback} capabilities and snowflake geometry was created through the use of a geometry shader, with variable translucency implemented in the fragment shader. Wind was simulated with a 3D texture, mapping particle positions to random velocities, and basic snow aggregation was implemented by blending the the background scene with colour of snow based upon snow density and the distance from the camera.
 
 \end{abstract}
 
@@ -21,7 +21,9 @@ This report describes the results of our project to render falling snow in real-
 \copyrightspace
 
 \section{Introduction and Motivation}
-Blah blah blah boring things.
+Snow is a common weather event in cold climates, both in reality and in various media. Despite this, many implementations of falling snow require several shortcuts to implement efficiently and often look quite bad as a result. A snowy scene can set the mood effectively in any number of situations and provide a more authentic feel to a scene when implemented well.
+
+Our goal is to provide a real-time rendering of falling snow that both looks nice and runs well on a range of hardware. We accomplish this by implementing a particle system that runs primarily on the GPU, allowing large systems to be simulated quickly due to heavy parallelism. Our system has three primary components to affect authenticity: an effective wind model that allows snow to move in a semi-realistic matter, snowflake models that can be rendered quickly but still look nice enough to fool the brain, and a simple distance-based fog to facilitate the appearance of high-density snowfall.
 
 \section{Methodology}
 Fog aggregation is calculated in a manner that assumes the snow volume is constant across the scene. While this is not particularly accurate - especially when particles are first created and are primarily at the top of the scene - it does allow for a more simplified implementation and makes modifying the formula for a good result much simpler. We determine the effect of the fog on visibility to be:
@@ -32,9 +34,15 @@ where $p_{cur}$ is the number of particles in the scene, $p_{const}$ is a consta
 
 The background color changes based on the number of particles in the scene to approximate the effect of "blowing out" the image due to heavy fog. This is a common effect when there are lots of lights in foggy conditions, and since our scene is not dark it seemed appropriate to implement this. We determined the value using a simple heuristic:
 \begin{equation} \label{eq:bgcolor}
-colour = c\sqrt[5]{p_cur}
+colour = c\sqrt[5]{p_{cur}}
 \end{equation}
 Where $c$ is a constant determined to be 0.04 by setting the colour to 0.5, an appropriate midpoint, and setting $p_{cur}$ to 300000 as our starting value. $\sqrt[5]{}$ was chosen since it scaled fairly well to higher values.
+
+Each particle has a radial fade-out applied to it in order to give the snowflake a softer appearance. This was simply determined to provide a nice looking result that softened the appearance of snowflakes while maintaining their visibility.
+\begin{equation} \label{eq:alpha}
+\frac{0.3 \cdot (0.0016 - distance^{0.9})} {0.001}
+\end{equation}
+In this equation, $distance$ is simply the distance from the center of the snowflake to the pixel being drawn.
 
 \section{Implementation}
 
@@ -56,11 +64,7 @@ Initially we had hoped to implement more interesting snowflake geometry, specifi
 
 The snowflake translucency takes advantage of \textit{alpha blending} within OpenGL. This feature is enabled by calling \textit{glBlendFunc}, specifying the source fragment alpha the destination fragment field. The source is what you are currently trying to render, and the destination is what is currently in the framebuffer. The parameters used in our project were \textit{GL\_SRC\_ALPHA}  and \textit{GL\_ONE} respectively.
 
-This blending complemented the geometry with which we built our snowflakes. The alpha of the source fragment was calculated in the fragment shader by 
-
-$max(\frac{0.3 \cdot (0.0016 - \textit{distance})} {0.001}, 0.00)$ 
-
-where \textit{distance} is the distance of the fragment from the centre of the snowflake, which was passed from the geometry shader to the fragment shader.
+This blending complemented the geometry with which we built our snowflakes. The alpha of the source fragment was calculated in the fragment shader by equation~\ref{eq:alpha} by passing the midpoint of the snowflake through the geometry shader.
 
 \subsection{Perlin Noise Wind}
 While a full fluid dynamics simulation is required for the most accurate results in modelling the movement of snowflakes, it is far too slow to use for an extremely large system. Instead, a 3D texture is generated before simulation starts to determine each particle's velocity as it moves through the scene.
