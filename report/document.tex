@@ -12,8 +12,7 @@
 \maketitle
 
 \begin{abstract}
-
-Abstract goes here.
+This report describes the results of our project to render falling snow in real-time. The the infrastructure for the particle model was done on the GPU by way of OpenGL's \textit{transform feedback} capabilities and snowflake geometry was created through the use of a geometry shader, with variable translucency implemented in the fragment shader. Wind was simulated with a 3D texture, mapping particle positions to random velocities, and basic snow aggregation was implemented by blending the the background scene with colour of snow, based upon snow density and the distance from the camera.
 
 \end{abstract}
 
