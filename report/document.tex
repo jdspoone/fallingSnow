@@ -58,9 +58,11 @@ The snowflake translucency takes advantage of \textit{alpha blending} within Ope
 
 This blending complemented the geometry with which we built our snowflakes. The alpha of the source fragment was calculated in the fragment shader by 
 
-$max(\frac{0.3 \cdot (0.0016 - \textit{distance})} {0.001}, 0.00)$ 
+\begin{equation} \label{eq:translucency}
+max(\frac{0.3 \cdot (0.0016 - \textit{distance})} {0.001}, 0.00)
+\end{equation}
 
-where \textit{distance} is the distance of the fragment from the centre of the snowflake, which was passed from the geometry shader to the fragment shader.
+where \textit{distance} is the distance of the fragment from the centre of the snowflake, which was passed from the geometry shader to the fragment shader. The closer a fragment is to the closer to the centre of the snowflake, the more opaque it will be, and the further away it is the more transparent, bottoming out at 0.
 
 \subsection{Perlin Noise Wind}
 While a full fluid dynamics simulation is required for the most accurate results in modelling the movement of snowflakes, it is far too slow to use for an extremely large system. Instead, a 3D texture is generated before simulation starts to determine each particle's velocity as it moves through the scene.
